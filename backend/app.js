@@ -8,11 +8,11 @@ import helmet from "helmet";
 
 const app = express();
 
-// app.use(
-//   helmet({
-//     crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-//   }),
-// );
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
