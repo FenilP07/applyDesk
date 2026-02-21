@@ -19,7 +19,11 @@ const jobSchema = new Schema(
     },
     dateApplied: { type: Date, default: Date.now, index: true },
 
-    source: { type: String, enum: ["manual", "linkedin"], default: "manual" },
+    source: {
+      type: String,
+      enum: ["manual", "linkedin", "email"],
+      default: "manual",
+    },
     sourceUrl: { type: String, default: null },
   },
   {

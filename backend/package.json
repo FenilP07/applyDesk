@@ -19,7 +19,9 @@
     "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.2.1"
+    "mongoose": "^9.2.1",
+    "openai": "^6.22.0",
+    "resend": "^6.9.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
