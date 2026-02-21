@@ -23,8 +23,11 @@ const handleResendWebhook = async (req, res) => {
     const user = await User.findOne({ email: senderEmail });
 
     if (!user) {
+      // 👇 ADD THIS LINE TEMPORARILY
+      console.log("DEBUG: Full Email Content from Google:", emailText);
+
       console.log(`Email received from unregistered address: ${senderEmail}`);
-      return res.status(200).send("User not found, ignoring email.");
+      return res.status(200).send("Unregistered sender");
     }
 
     const completion = await openai.chat.completions.create({
