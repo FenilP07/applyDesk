@@ -1,7 +1,7 @@
 const baseCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 };
 
 const setAuthCookies = (res, { accessToken, refreshToken }) => {
@@ -17,6 +17,7 @@ const setAuthCookies = (res, { accessToken, refreshToken }) => {
 };
 
 const clearAuthCookies = (res) => {
+
   res.clearCookie("accessToken", baseCookieOptions);
   res.clearCookie("refreshToken", baseCookieOptions);
 };
