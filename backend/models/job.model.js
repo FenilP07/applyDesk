@@ -8,31 +8,44 @@ const jobSchema = new Schema(
       required: true,
       index: true,
     },
+
     title: { type: String, required: true, trim: true },
     company: { type: String, required: true, trim: true },
     location: { type: String, default: null, trim: true },
+
     status: {
       type: String,
       enum: ["applied", "interview", "rejected", "offer"],
       default: "applied",
       index: true,
     },
+
     dateApplied: { type: Date, default: Date.now, index: true },
 
     source: {
       type: String,
       enum: ["manual", "linkedin", "email"],
       default: "manual",
+      index: true,
     },
+
+    // ✅ NEW: for dedupe (Resend inbound email id)
+    sourceId: { type: String, default: null },
+
     sourceUrl: { type: String, default: null },
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
+
+// Keep your existing indexes
 jobSchema.index({ userId: 1, company: 1 });
 jobSchema.index({ userId: 1, title: 1 });
 
-const job = mongoose.model("Job", jobSchema);
+// ✅ NEW: DB-level dedupe for inbound emails (prevents duplicates on retries)
+jobSchema.index(
+  { userId: 1, source: 1, sourceId: 1 },
+  { unique: true, sparse: true },
+);
 
-export default job;
+const Job = mongoose.model("Job", jobSchema);
+export default Job;
