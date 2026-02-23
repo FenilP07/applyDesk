@@ -29,13 +29,10 @@ async function findUser(emailContent) {
     : emailContent.to;
   const toAddress = (typeof toRaw === "object" ? toRaw.email : toRaw) || "";
 
-  const deliveredTo =
-    emailContent.headers?.find((h) => h.name.toLowerCase() === "delivered-to")
-      ?.value || "";
+  const headers = emailContent.headers || {};
 
-  const xForwardedTo =
-    emailContent.headers?.find((h) => h.name.toLowerCase() === "x-forwarded-to")
-      ?.value || "";
+  const deliveredTo = headers["delivered-to"] || "";
+  const xForwardedTo = headers["x-forwarded-to"] || "";
 
   const searchString =
     `${toAddress} ${deliveredTo} ${xForwardedTo}`.toLowerCase();
