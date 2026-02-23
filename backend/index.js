@@ -4,6 +4,10 @@ import authRoutes from "./routes/user.route.js";
 import jobRoutes from "./routes/job.route.js";
 import automationRoutes from "./routes/automation.route.js";
 
+app.get("health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/webhook", automationRoutes);
