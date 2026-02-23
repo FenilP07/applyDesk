@@ -4,7 +4,7 @@ import authRoutes from "./routes/user.route.js";
 import jobRoutes from "./routes/job.route.js";
 import automationRoutes from "./routes/automation.route.js";
 
-app.get("health", (req, res) => {
+app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
