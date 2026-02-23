@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, Link, useLocation } from "react-router-dom";
 import useAuthStore from "./store/authStore";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
-import { LayoutDashboard, Briefcase, LogOut, Sparkles } from "lucide-react";
+import { LayoutDashboard, Briefcase, LogOut } from "lucide-react";
 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -16,81 +16,128 @@ function TopNav() {
   if (location.pathname === "/login") return null;
 
   const navLinks = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { name: "Jobs", path: "/jobs", icon: Briefcase },
+    { name: "Dashboard",    path: "/dashboard", icon: LayoutDashboard },
+    { name: "Applications", path: "/jobs",       icon: Briefcase },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-8">
-        {/* Logo */}
-        <Link to="/dashboard" className="flex items-center gap-2 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-200 transition-transform group-hover:scale-105">
-            <Sparkles size={20} fill="currentColor" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-gray-900">
-            Apply<span className="text-blue-600">Desk</span>
-          </span>
-        </Link>
+    <header
+      style={{
+        position: "sticky", top: 0, zIndex: 40,
+        background: "rgba(247,245,242,0.92)",
+        backdropFilter: "blur(16px)",
+        borderBottom: "1px solid #E8E4DE",
+        height: "58px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 2.5rem",
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      {/* Logo */}
+      <Link to="/dashboard" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}>
+        <div
+          style={{
+            width: "22px", height: "22px", borderRadius: "6px",
+            background: "#1C1917",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        <span
+          style={{
+            fontFamily: "'Lora', serif",
+            fontSize: "1.05rem", fontWeight: 600,
+            color: "#1C1917", letterSpacing: "-0.02em",
+          }}
+        >
+          JobRadar
+        </span>
+      </Link>
 
-        {isAuthenticated && (
-          <div className="flex items-center gap-1 sm:gap-4">
-            {/* Navigation Links */}
-            <nav className="flex items-center border-r border-gray-100 pr-2 sm:pr-4">
-              {navLinks.map((link) => {
-                const isActive = location.pathname === link.path;
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.path}
-                    to={link.path}
-                    className={`relative flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
-                      isActive 
-                        ? "text-blue-600 bg-blue-50" 
-                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span className="hidden md:inline">{link.name}</span>
-                    {isActive && (
-                      <span className="absolute -bottom-[13px] left-1/2 h-1 w-8 -translate-x-1/2 rounded-t-full bg-blue-600" />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
+      {isAuthenticated && (
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
 
-            {/* Profile & Logout */}
-            <div className="flex items-center gap-3 pl-1 sm:pl-2">
-              <div className="hidden items-center gap-2 sm:flex">
-                <div className="flex flex-col items-end">
-                  <span className="text-xs font-bold text-gray-900 leading-none">{user?.name}</span>
-                  <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">Pro Member</span>
-                </div>
-                {user?.picture ? (
-                  <img
-                    src={user.picture}
-                    alt="Profile"
-                    className="h-9 w-9 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-100"
-                  />
-                ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600">
-                    {user?.name?.charAt(0) || "U"}
-                  </div>
-                )}
+          {/* Nav links */}
+          <nav style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+            {navLinks.map(({ name, path, icon: Icon }) => {
+              const active = location.pathname === path;
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "6px",
+                    padding: "6px 12px", borderRadius: "8px",
+                    fontSize: "0.8rem", fontWeight: 500,
+                    color: active ? "#1C1917" : "#A8A29E",
+                    background: active ? "#EFEDE9" : "transparent",
+                    textDecoration: "none",
+                    transition: "all 0.15s",
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  <Icon size={15} />
+                  <span>{name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Divider */}
+          <div style={{ width: "1px", height: "20px", background: "#E8E4DE" }} />
+
+          {/* User + logout */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "0.78rem", fontWeight: 500, color: "#1C1917", lineHeight: 1 }}>
+                {user?.name}
               </div>
-
-              <button
-                onClick={logout}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
-                title="Sign Out"
-              >
-                <LogOut size={20} />
-              </button>
+              <div style={{ fontSize: "0.62rem", color: "#A8A29E", marginTop: "2px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Active search
+              </div>
             </div>
+
+            {user?.picture ? (
+              <img
+                src={user.picture}
+                alt="Profile"
+                style={{ width: "30px", height: "30px", borderRadius: "50%", border: "1px solid #E8E4DE" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "30px", height: "30px", borderRadius: "50%",
+                  background: "#EFEDE9", border: "1px solid #E8E4DE",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "0.68rem", fontWeight: 600, color: "#57534E",
+                }}
+              >
+                {user?.name?.charAt(0) ?? "U"}
+              </div>
+            )}
+
+            <button
+              onClick={logout}
+              title="Sign out"
+              style={{
+                width: "28px", height: "28px", borderRadius: "8px",
+                background: "none", border: "1px solid transparent",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#A8A29E", cursor: "pointer", transition: "all 0.12s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#FFF1F2"; e.currentTarget.style.borderColor = "#FECDD3"; e.currentTarget.style.color = "#BE123C"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.color = "#A8A29E"; }}
+            >
+              <LogOut size={15} />
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 }
@@ -98,50 +145,20 @@ function TopNav() {
 export default function App() {
   const { bootstrap } = useAuthStore();
 
-  useEffect(() => {
-    bootstrap();
-  }, [bootstrap]);
+  useEffect(() => { bootstrap(); }, [bootstrap]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div style={{ minHeight: "100vh", background: "#F7F5F2" }}>
       <TopNav />
-
-      <main className="relative">
+      <main>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-          <Route
-            path="/login"
-            element={
-              <PublicOnlyRoute>
-                <LoginPage />
-              </PublicOnlyRoute>
-            }
-          />
-
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/jobs"
-            element={
-              <ProtectedRoute>
-                <JobsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/"         element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login"    element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/jobs"     element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
+          <Route path="*"         element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
-      
-      {/* Optional: Footer or floating elements could go here */}
     </div>
   );
 }

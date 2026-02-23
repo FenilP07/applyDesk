@@ -1,90 +1,117 @@
 import { GoogleLogin } from "@react-oauth/google";
 import useAuthStore from "../store/authStore";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, ShieldCheck, AlertCircle, X } from "lucide-react";
+import { AlertCircle, X } from "lucide-react";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { googleLogin, loading, error, clearError } = useAuthStore();
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-50 rounded-full blur-3xl opacity-50" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-50 rounded-full blur-3xl opacity-50" />
+    <div
+      style={{ fontFamily: "'DM Sans', sans-serif", background: "#F7F5F2" }}
+      className="min-h-screen flex items-center justify-center p-6"
+    >
+      {/* Subtle background texture */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-stone-200/40 blur-3xl" />
+      </div>
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo Branding */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-200 mb-4">
-            <Sparkles size={32} fill="currentColor" />
+      <div className="w-full max-w-sm relative z-10">
+
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-10">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
+            style={{ background: "#1C1917" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Job<span className="text-blue-600">Radar</span>
+          <h1
+            className="text-2xl tracking-tight text-stone-900"
+            style={{ fontFamily: "'Lora', serif", fontWeight: 600, letterSpacing: "-0.03em" }}
+          >
+            JobRadar
           </h1>
-          <p className="mt-2 text-gray-500 text-center">
-            Your personal command center for job hunting.
+          <p className="text-sm text-stone-400 mt-1 font-normal">
+            Your job search, organised.
           </p>
         </div>
 
-        {/* Login Card */}
-        <div className="rounded-3xl bg-white shadow-xl shadow-blue-900/5 border border-gray-100 p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-xl font-bold text-gray-900">Welcome Back</h2>
-            <p className="text-sm text-gray-500 mt-1">Sign in to manage your applications</p>
+        {/* Card */}
+        <div
+          className="bg-white rounded-2xl p-8"
+          style={{ border: "1px solid #E8E4DE" }}
+        >
+          <div className="mb-7">
+            <h2
+              className="text-lg text-stone-900 mb-1"
+              style={{ fontFamily: "'Lora', serif", fontWeight: 600, letterSpacing: "-0.02em" }}
+            >
+              Welcome back
+            </h2>
+            <p className="text-xs text-stone-400 font-normal">Sign in to manage your applications</p>
           </div>
 
           {error && (
-            <div className="mb-6 rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-700 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-              <AlertCircle size={18} className="shrink-0 mt-0.5" />
-              <div className="flex-1">{error}</div>
-              <button
-                onClick={clearError}
-                className="shrink-0 rounded-lg p-1 hover:bg-rose-100 transition-colors"
-              >
-                <X size={16} />
+            <div
+              className="mb-5 rounded-xl p-3.5 text-xs flex items-start gap-2.5"
+              style={{ background: "#FFF1F2", border: "1px solid #FECDD3", color: "#BE123C" }}
+            >
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <span className="flex-1 leading-relaxed">{error}</span>
+              <button onClick={clearError} className="shrink-0 hover:opacity-70 transition-opacity">
+                <X size={13} />
               </button>
             </div>
           )}
 
-          <div className="flex flex-col items-center justify-center gap-6">
-            <div 
-              className={`w-full transition-all duration-300 ${loading ? "opacity-40 pointer-events-none scale-[0.98]" : "scale-100"}`} 
-              aria-busy={loading}
-            >
-              <GoogleLogin
-                onSuccess={async (cred) => {
-                  const result = await googleLogin(cred.credential);
-                  if (result?.success) navigate("/dashboard", { replace: true });
-                }}
-                onError={() => {}}
-                useOneTap={false}
-                theme="outline"
-                shape="pill"
-                size="large"
-                width="100%"
+          <div
+            className={`w-full transition-all duration-200 ${
+              loading ? "opacity-40 pointer-events-none" : ""
+            }`}
+          >
+            <GoogleLogin
+              onSuccess={async (cred) => {
+                const result = await googleLogin(cred.credential);
+                if (result?.success) navigate("/dashboard", { replace: true });
+              }}
+              onError={() => {}}
+              useOneTap={false}
+              theme="outline"
+              shape="rectangular"
+              size="large"
+              width="100%"
+            />
+          </div>
+
+          {loading && (
+            <div className="flex items-center justify-center gap-2.5 mt-4 text-xs font-medium text-stone-400">
+              <div
+                className="h-3.5 w-3.5 rounded-full border-2 animate-spin"
+                style={{ borderColor: "#E8E4DE", borderTopColor: "#1C1917" }}
               />
+              Authenticating…
             </div>
+          )}
 
-            {loading && (
-              <div className="flex items-center gap-3 text-sm font-medium text-blue-600 animate-pulse">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
-                Authenticating...
-              </div>
-            )}
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px" style={{ background: "#E8E4DE" }} />
+            <span className="text-xs text-stone-300 uppercase tracking-widest font-medium">secure</span>
+            <div className="flex-1 h-px" style={{ background: "#E8E4DE" }} />
           </div>
 
-          {/* Security Note */}
-          <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-center gap-2 text-gray-400">
-            <ShieldCheck size={16} />
-            <span className="text-xs font-medium uppercase tracking-widest">Secure Cloud Sync</span>
-          </div>
+          <p className="text-xs text-center leading-relaxed" style={{ color: "#A8A29E" }}>
+            Your data is encrypted and never shared with employers.
+          </p>
         </div>
 
-        {/* Footer info */}
-        <p className="mt-8 text-center text-xs text-gray-400 leading-relaxed px-4">
-          By signing in, you agree to our Terms of Service. <br />
-          Your data is encrypted and never shared with employers.
+        <p className="text-center text-xs mt-6" style={{ color: "#A8A29E" }}>
+          By signing in you agree to our Terms of Service.
         </p>
       </div>
     </div>
