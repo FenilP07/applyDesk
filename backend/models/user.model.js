@@ -13,6 +13,12 @@ const userSchema = new Schema(
       lowercase: true,
       index: true,
     },
+    inboundPrefix: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: () => Math.random().toString(36).substring(2, 10),
+    },
     picture: { type: String, default: null },
     refreshToken: { type: String, default: null, select: false },
   },

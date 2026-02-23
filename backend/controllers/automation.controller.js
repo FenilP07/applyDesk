@@ -24,32 +24,27 @@ function extractEmail(raw = "") {
 }
 
 async function findUser(emailContent) {
-  const toRaw = Array.isArray(emailContent.to)
+    const toRaw = Array.isArray(emailContent.to)
     ? emailContent.to[0]
     : emailContent.to;
   const toAddress = (typeof toRaw === "object" ? toRaw.email : toRaw) || "";
 
-  const headers = emailContent.headers || {};
+  const deliveredTo = emailContent.headers?.["delivered-to"] || "";
 
-  const deliveredTo = headers["delivered-to"] || "";
-  const xForwardedTo = headers["x-forwarded-to"] || "";
+  const getPrefix = (addr) =>
+    addr.split("@")[0].split("+")[0].trim().toLowerCase();
 
-  const searchString =
-    `${toAddress} ${deliveredTo} ${xForwardedTo}`.toLowerCase();
+  const prefixFromTo = getPrefix(toAddress);
+  const prefixFromDelivered = getPrefix(deliveredTo);
 
-  const plusMatch = searchString.match(/\+([a-f0-9]{24})@/);
+  const user = await User.findOne({
+    inboundPrefix: { $in: [prefixFromTo, prefixFromDelivered] },
+  });
 
-  if (plusMatch) {
-    const userId = plusMatch[1];
-    const user = await User.findById(userId);
-    if (user) return user;
-  }
+  if (user) return user;
 
   const fromEmail = extractEmail(emailContent.from || "");
-  const userByFrom = await User.findOne({ email: fromEmail });
-  if (userByFrom) return userByFrom;
-
-  return null;
+  return await User.findOne({ email: fromEmail.toLowerCase() });
 }
 
 export const handleResendWebhook = async (req, res) => {
