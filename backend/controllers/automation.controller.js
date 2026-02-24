@@ -73,24 +73,30 @@ export const handleResendWebhook = async (req, res) => {
       return res.status(200).send("No user matched.");
     }
 
+    // 🆕 GOOGLE VERIFICATION LINK CAPTURE (Fixed Regex)
     if (emailContent.from?.toLowerCase().includes("google.com")) {
-      const linkMatch = text
-        .replace(/\s/g, "")
-        .match(/https:\/\/mail\.google\.com\/mail\/vf-[^\s>"]+/);
+      // 1. Clean the text of newlines only, keeping spaces to help split the URL
+      const cleanText = text.replace(/[\r\n]+/g, " ");
+
+      // 2. Look for the link - stopping at the first space or quote
+      const linkMatch = cleanText.match(
+        /https:\/\/mail(?:-settings)?\.google\.com\/mail\/v[fu]-[^\s>"]+/,
+      );
 
       if (linkMatch) {
         const fullLink = linkMatch[0];
+
         console.log("====================================================");
-        console.log("🔗 GOOGLE VERIFICATION LINK DETECTED:");
+        console.log("🔗 CLEAN GOOGLE LINK:");
         console.log(fullLink);
         console.log("====================================================");
+
         await Notification.create({
           userId: user._id,
           message: "Action Required: Approve Gmail Forwarding",
           link: fullLink,
           type: "system",
         });
-        console.log(`🔗 Verification link captured for: ${user.email}`);
       }
       return res.status(200).send("Verification processed.");
     }
