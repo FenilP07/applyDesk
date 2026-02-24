@@ -1,17 +1,48 @@
-import { useEffect } from "react";
-import { Routes, Route, Navigate, Link, useLocation } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import {
+  Routes,
+  Route,
+  Navigate,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import useAuthStore from "./store/authStore";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
-import { LayoutDashboard, Briefcase, LogOut } from "lucide-react";
+import { LayoutDashboard, Briefcase, LogOut, Bell } from "lucide-react";
+import useNotificationStore from "./store/notificationStore";
 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import JobsPage from "./pages/JobsPage";
+import NotificationPage from "./pages/NotificationPage";
 
 function TopNav() {
   const { isAuthenticated, logout, user } = useAuthStore();
+  const { notifications, unreadCount, fetchAllNotifications } = useNotificationStore();
+
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAllNotifications();
+    }
+  }, [isAuthenticated, fetchAllNotifications]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   if (location.pathname === "/login") return null;
 
@@ -37,7 +68,6 @@ function TopNav() {
         fontFamily: "'DM Sans', sans-serif",
       }}
     >
-      {/* Logo */}
       <Link
         to="/dashboard"
         style={{
@@ -77,7 +107,6 @@ function TopNav() {
             fontSize: "1.05rem",
             fontWeight: 600,
             color: "#1C1917",
-            letterSpacing: "-0.02em",
           }}
         >
           applyDesk
@@ -86,7 +115,6 @@ function TopNav() {
 
       {isAuthenticated && (
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          {/* Nav links */}
           <nav style={{ display: "flex", alignItems: "center", gap: "2px" }}>
             {navLinks.map(({ name, path, icon: Icon }) => {
               const active = location.pathname === path;
@@ -105,8 +133,6 @@ function TopNav() {
                     color: active ? "#1C1917" : "#A8A29E",
                     background: active ? "#EFEDE9" : "transparent",
                     textDecoration: "none",
-                    transition: "all 0.15s",
-                    letterSpacing: "0.01em",
                   }}
                 >
                   <Icon size={15} />
@@ -114,14 +140,137 @@ function TopNav() {
                 </Link>
               );
             })}
+
+            {/* 🔔 Notification Dropdown */}
+            <div
+              style={{ position: "relative", padding: "6px 12px" }}
+              ref={dropdownRef}
+            >
+              <div
+                onClick={() => setOpen(!open)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  position: "relative",
+                }}
+              >
+                <Bell size={15} />
+
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: "-6px",
+                      right: "-8px",
+                      minWidth: "16px",
+                      height: "16px",
+                      borderRadius: "999px",
+                      background: "#BE123C",
+                      color: "white",
+                      fontSize: "0.6rem",
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0 4px",
+                    }}
+                  >
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+
+              {open && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "36px",
+                    right: 0,
+                    width: "320px",
+                    background: "white",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                    border: "1px solid #E8E4DE",
+                    overflow: "hidden",
+                    zIndex: 100,
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: "12px",
+                      fontWeight: 600,
+                      borderBottom: "1px solid #E8E4DE",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    Notifications
+                  </div>
+
+                  <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: "16px", fontSize: "0.85rem" }}>
+                        No notifications
+                      </div>
+                    ) : (
+                      notifications.slice(0, 5).map((n) => (
+                        <div
+                          key={n._id}
+                          onClick={() => {
+                            setOpen(false);
+                            // Navigate to the specific notification detail page
+                            navigate(`/notifications/${n._id}`);
+                          }}
+                          style={{
+                            padding: "12px 14px",
+                            cursor: "pointer",
+                            background: n.read ? "white" : "#F0F9FF",
+                            borderBottom: "1px solid #F1F5F9",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          {n.message}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "10px",
+                      textAlign: "center",
+                      background: "#FAFAF9",
+                      borderTop: "1px solid #E8E4DE"
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        setOpen(false);
+                        // Navigate to the general notifications list
+                        navigate("/notifications");
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#1C1917",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontSize: "0.8rem",
+                        width: "100%"
+                      }}
+                    >
+                      View All
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </nav>
 
-          {/* Divider */}
           <div
             style={{ width: "1px", height: "20px", background: "#E8E4DE" }}
           />
 
-          {/* User + logout */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div style={{ textAlign: "right" }}>
               <div
@@ -129,21 +278,9 @@ function TopNav() {
                   fontSize: "0.78rem",
                   fontWeight: 500,
                   color: "#1C1917",
-                  lineHeight: 1,
                 }}
               >
                 {user?.name}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.62rem",
-                  color: "#A8A29E",
-                  marginTop: "2px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                Active search
               </div>
             </div>
 
@@ -155,7 +292,6 @@ function TopNav() {
                   width: "30px",
                   height: "30px",
                   borderRadius: "50%",
-                  border: "1px solid #E8E4DE",
                 }}
               />
             ) : (
@@ -165,45 +301,18 @@ function TopNav() {
                   height: "30px",
                   borderRadius: "50%",
                   background: "#EFEDE9",
-                  border: "1px solid #E8E4DE",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "0.68rem",
-                  fontWeight: 600,
-                  color: "#57534E",
                 }}
               >
                 {user?.name?.charAt(0) ?? "U"}
               </div>
             )}
 
-            <button
-              onClick={logout}
-              title="Sign out"
-              style={{
-                width: "28px",
-                height: "28px",
-                borderRadius: "8px",
-                background: "none",
-                border: "1px solid transparent",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#A8A29E",
-                cursor: "pointer",
-                transition: "all 0.12s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#FFF1F2";
-                e.currentTarget.style.borderColor = "#FECDD3";
-                e.currentTarget.style.color = "#BE123C";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "none";
-                e.currentTarget.style.borderColor = "transparent";
-                e.currentTarget.style.color = "#A8A29E";
-              }}
+            <button 
+              onClick={logout} 
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
             >
               <LogOut size={15} />
             </button>
@@ -248,6 +357,24 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <JobsPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Main notifications list */}
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Specific notification detail view */}
+          <Route
+            path="/notifications/:id"
+            element={
+              <ProtectedRoute>
+                <NotificationPage />
               </ProtectedRoute>
             }
           />

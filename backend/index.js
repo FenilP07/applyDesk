@@ -11,7 +11,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/webhook", automationRoutes);
-app.use("/nootification", notificationRoutes);
+app.use("/api/notification", notificationRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)
