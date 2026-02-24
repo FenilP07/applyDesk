@@ -56,6 +56,7 @@ const googleSignIn = async (req, res) => {
         name: user.name,
         email: user.email,
         picture: user.picture,
+        inboundPrefix: user.inboundPrefix,
       },
     });
   } catch (error) {
@@ -72,7 +73,7 @@ const refresh = async (req, res) => {
     const decoded = verifyRefreshToken(token);
 
     const user = await User.findById(decoded.sub).select(
-      "+refreshToken name email role picture",
+      "+refreshToken name email role picture inboundPrefix",
     );
     if (!user) return res.status(401).json({ message: "User not found" });
 
@@ -99,6 +100,7 @@ const refresh = async (req, res) => {
         name: user.name,
         email: user.email,
         picture: user.picture,
+        inboundPrefix: user.inboundPrefix,
       },
     });
   } catch (err) {

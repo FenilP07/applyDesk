@@ -10,17 +10,25 @@ import {
 import useAuthStore from "./store/authStore";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
-import { LayoutDashboard, Briefcase, LogOut, Bell } from "lucide-react";
+import {
+  LayoutDashboard,
+  Briefcase,
+  LogOut,
+  Bell,
+  Settings,
+} from "lucide-react";
 import useNotificationStore from "./store/notificationStore";
 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import JobsPage from "./pages/JobsPage";
 import NotificationPage from "./pages/NotificationPage";
+import InboundSetupPage from "./pages/InboundSetupPage";
 
 function TopNav() {
   const { isAuthenticated, logout, user } = useAuthStore();
-  const { notifications, unreadCount, fetchAllNotifications } = useNotificationStore();
+  const { notifications, unreadCount, fetchAllNotifications } =
+    useNotificationStore();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,6 +57,7 @@ function TopNav() {
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Applications", path: "/jobs", icon: Briefcase },
+    { name: "Configure", path: "setup", icon: Settings },
   ];
 
   return (
@@ -240,7 +249,7 @@ function TopNav() {
                       padding: "10px",
                       textAlign: "center",
                       background: "#FAFAF9",
-                      borderTop: "1px solid #E8E4DE"
+                      borderTop: "1px solid #E8E4DE",
                     }}
                   >
                     <button
@@ -256,7 +265,7 @@ function TopNav() {
                         fontWeight: 600,
                         cursor: "pointer",
                         fontSize: "0.8rem",
-                        width: "100%"
+                        width: "100%",
                       }}
                     >
                       View All
@@ -310,9 +319,15 @@ function TopNav() {
               </div>
             )}
 
-            <button 
-              onClick={logout} 
-              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
+            <button
+              onClick={logout}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+              }}
             >
               <LogOut size={15} />
             </button>
@@ -335,6 +350,10 @@ export default function App() {
       <TopNav />
       <main>
         <Routes>
+          <Route
+            path="/setup"
+            element={<InboundSetupPage></InboundSetupPage>}
+          />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route
             path="/login"
@@ -378,6 +397,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>

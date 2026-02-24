@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import Job from "../models/job.model.js";
 import User from "../models/user.model.js";
 import Notification from "../models/notification.model.js";
+import notification from "../models/notification.model.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -136,6 +137,12 @@ export const handleResendWebhook = async (req, res) => {
         dateApplied: new Date(),
       });
       console.log(`✅ Job Tracked: ${newJob.title} at ${newJob.company}`);
+
+      await notification.create({
+        userId: user._id,
+        message: `New Application Tracked: ${aiParsed.job_title} at ${aiParsed.company}`,
+        type: "job",
+      });
     }
 
     return res.status(200).json({ success: true });

@@ -11,7 +11,9 @@ const isLoggedIn = async (req, res, next) => {
 
     const decoded = verifyAccessToken(token);
 
-    const user = await User.findById(decoded.sub).select("name email picture");
+    const user = await User.findById(decoded.sub).select(
+      "name email picture inboundPrefix",
+    );
     if (!user) return res.status(401).json({ message: "User not found" });
 
     req.user = user;
