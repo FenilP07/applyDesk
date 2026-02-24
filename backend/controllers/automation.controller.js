@@ -3,7 +3,6 @@ import OpenAI from "openai";
 import Job from "../models/job.model.js";
 import User from "../models/user.model.js";
 import Notification from "../models/notification.model.js";
-import notification from "../models/notification.model.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -34,7 +33,6 @@ async function findUser(emailContent) {
 
   const getPrefix = (addr) =>
     addr.split("@")[0].split("+")[0].trim().toLowerCase();
-
   const prefixes = [getPrefix(toAddress), getPrefix(deliveredTo)];
 
   const user = await User.findOne({
@@ -74,46 +72,44 @@ export const handleResendWebhook = async (req, res) => {
       return res.status(200).send("No user matched.");
     }
 
-    // 🆕 GOOGLE VERIFICATION LINK CAPTURE (Fixed Regex)
+    // --- 1. GOOGLE VERIFICATION HANDLER ---
     if (emailContent.from?.toLowerCase().includes("google.com")) {
-      // 1. Clean the text of newlines only, keeping spaces to help split the URL
       const cleanText = text.replace(/[\r\n]+/g, " ");
-
-      // 2. Look for the link - stopping at the first space or quote
       const linkMatch = cleanText.match(
         /https:\/\/mail(?:-settings)?\.google\.com\/mail\/v[fu]-[^\s>"]+/,
       );
 
       if (linkMatch) {
-        const fullLink = linkMatch[0];
-
-        console.log("====================================================");
-        console.log("🔗 CLEAN GOOGLE LINK:");
-        console.log(fullLink);
-        console.log("====================================================");
-
         await Notification.create({
           userId: user._id,
           message: "Action Required: Approve Gmail Forwarding",
-          link: fullLink,
+          link: linkMatch[0],
           type: "system",
         });
+        console.log("🔗 Google Verification Link Captured");
       }
       return res.status(200).send("Verification processed.");
     }
 
+    // --- 2. DUPLICATE CHECK ---
     const existingJob = await Job.findOne({ sourceId: data.email_id });
     if (existingJob)
       return res.status(200).json({ success: true, message: "Duplicate" });
 
-    // 🧠 AI EXTRACTION
+    // --- 3. AI EXTRACTION WITH IMPROVED PROMPT ---
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content:
-            'Extract job application info. Return JSON: { "company": string, "job_title": string, "location": string, "is_job_receipt": boolean }. Set is_job_receipt to false if this is a verification or system email.',
+          content: `You are a job application assistant. Extract info from emails.
+          Return JSON: { "company": string, "job_title": string, "location": string, "is_job_receipt": boolean }
+          
+          RULES:
+          - Set is_job_receipt to true if the email is a confirmation of a submitted application.
+          - Recognize LinkedIn's "Your application was sent to [Company]" as a receipt.
+          - Recognize "Thank you for applying", "Received your application", or "Confirmation of your application".
+          - If it's just a job suggestion/alert or marketing, set is_job_receipt to false.`,
         },
         {
           role: "user",
@@ -125,6 +121,14 @@ export const handleResendWebhook = async (req, res) => {
 
     const aiParsed = JSON.parse(completion.choices[0].message.content);
 
+    // --- 4. DEBUG LOGS FOR RENDER ---
+    console.log("--- AI DECISION ---");
+    console.log("Subject:", emailContent.subject);
+    console.log("Is Job Receipt:", aiParsed.is_job_receipt);
+    console.log("Company:", aiParsed.company);
+    console.log("-------------------");
+
+    // --- 5. DATA PERSISTENCE ---
     if (aiParsed.is_job_receipt) {
       const newJob = await Job.create({
         userId: user._id,
@@ -136,13 +140,14 @@ export const handleResendWebhook = async (req, res) => {
         sourceId: data.email_id,
         dateApplied: new Date(),
       });
-      console.log(`✅ Job Tracked: ${newJob.title} at ${newJob.company}`);
 
-      await notification.create({
+      await Notification.create({
         userId: user._id,
         message: `New Application Tracked: ${aiParsed.job_title} at ${aiParsed.company}`,
         type: "job",
       });
+
+      console.log(`✅ Job Tracked: ${newJob.title} at ${newJob.company}`);
     }
 
     return res.status(200).json({ success: true });
