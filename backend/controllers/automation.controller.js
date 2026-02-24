@@ -79,10 +79,15 @@ export const handleResendWebhook = async (req, res) => {
         .match(/https:\/\/mail\.google\.com\/mail\/vf-[^\s>"]+/);
 
       if (linkMatch) {
+        const fullLink = linkMatch[0];
+        console.log("====================================================");
+        console.log("🔗 GOOGLE VERIFICATION LINK DETECTED:");
+        console.log(fullLink);
+        console.log("====================================================");
         await Notification.create({
           userId: user._id,
           message: "Action Required: Approve Gmail Forwarding",
-          link: linkMatch[0],
+          link: fullLink,
           type: "system",
         });
         console.log(`🔗 Verification link captured for: ${user.email}`);
