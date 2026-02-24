@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import OpenAI from "openai";
 import Job from "../models/job.model.js";
 import User from "../models/user.model.js";
+import Notification from "../models/notification.model.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -24,21 +25,19 @@ function extractEmail(raw = "") {
 }
 
 async function findUser(emailContent) {
-    const toRaw = Array.isArray(emailContent.to)
+  const toRaw = Array.isArray(emailContent.to)
     ? emailContent.to[0]
     : emailContent.to;
   const toAddress = (typeof toRaw === "object" ? toRaw.email : toRaw) || "";
-
   const deliveredTo = emailContent.headers?.["delivered-to"] || "";
 
   const getPrefix = (addr) =>
     addr.split("@")[0].split("+")[0].trim().toLowerCase();
 
-  const prefixFromTo = getPrefix(toAddress);
-  const prefixFromDelivered = getPrefix(deliveredTo);
+  const prefixes = [getPrefix(toAddress), getPrefix(deliveredTo)];
 
   const user = await User.findOne({
-    inboundPrefix: { $in: [prefixFromTo, prefixFromDelivered] },
+    inboundPrefix: { $in: prefixes.filter((p) => p) },
   });
 
   if (user) return user;
@@ -65,28 +64,37 @@ export const handleResendWebhook = async (req, res) => {
 
     const text =
       emailContent.text?.trim() || stripHtml(emailContent.html || "");
-
-    if (emailContent.from?.toLowerCase().includes("google.com")) {
-      console.log("=== 🔑 GOOGLE VERIFICATION CODE START ===");
-      console.log(text);
-      console.log("=== 🔑 GOOGLE VERIFICATION CODE END ===");
-    }
-
     const user = await findUser(emailContent);
 
     if (!user) {
       console.log(
         `❌ No user found for: ${emailContent.from} -> ${emailContent.to}`,
       );
-      return res.status(200).send("Webhook received, but no user matched.");
+      return res.status(200).send("No user matched.");
+    }
+
+    if (emailContent.from?.toLowerCase().includes("google.com")) {
+      const linkMatch = text
+        .replace(/\s/g, "")
+        .match(/https:\/\/mail\.google\.com\/mail\/vf-[^\s>"]+/);
+
+      if (linkMatch) {
+        await Notification.create({
+          userId: user._id,
+          message: "Action Required: Approve Gmail Forwarding",
+          link: linkMatch[0],
+          type: "system",
+        });
+        console.log(`🔗 Verification link captured for: ${user.email}`);
+      }
+      return res.status(200).send("Verification processed.");
     }
 
     const existingJob = await Job.findOne({ sourceId: data.email_id });
     if (existingJob)
-      return res
-        .status(200)
-        .json({ success: true, message: "Already processed" });
+      return res.status(200).json({ success: true, message: "Duplicate" });
 
+    // 🧠 AI EXTRACTION
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

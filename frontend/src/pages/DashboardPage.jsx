@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import useJobStore from "../store/jobStore";
 import { Plus } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 const STATUSES = [
   { key: "total", label: "Total", dot: "#A8A29E" },
@@ -40,10 +41,36 @@ const PILL_STYLES = {
   },
 };
 
+// -------------------- Motion presets --------------------
+const easeOut = [0.16, 1, 0.3, 1];
+
+const fadeUp = (delay = 0) => ({
+  hidden: { opacity: 0, y: 12 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: easeOut, delay },
+  },
+});
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.06 } },
+};
+
+const hoverLift = {
+  whileHover: { y: -3, scale: 1.01 },
+  whileTap: { scale: 0.98 },
+};
+
 function StatusPill({ status }) {
   const s = PILL_STYLES[status] ?? {};
   return (
-    <span
+    <motion.span
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.25, ease: easeOut }}
+      whileHover={{ scale: 1.03 }}
       className="inline-flex items-center rounded-full text-xs font-semibold capitalize"
       style={{
         padding: "3px 9px",
@@ -54,12 +81,13 @@ function StatusPill({ status }) {
       }}
     >
       {status}
-    </span>
+    </motion.span>
   );
 }
 
 export default function DashboardPage() {
   const { summary, fetchSummary, fetchJobs, jobs } = useJobStore();
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     fetchSummary();
@@ -90,13 +118,19 @@ export default function DashboardPage() {
   const recent = [...(jobs ?? [])].slice(0, 4);
 
   return (
-    <div
+    <motion.div
       className="min-h-screen"
       style={{ background: "#F7F5F2", fontFamily: "'DM Sans', sans-serif" }}
+      initial={reduce ? false : "hidden"}
+      animate={reduce ? false : "show"}
+      variants={stagger}
     >
       <div className="mx-auto max-w-6xl px-6 py-10 lg:px-10">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
+        <motion.div
+          className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8"
+          variants={fadeUp(0)}
+        >
           <div>
             <p
               className="text-xs font-semibold uppercase tracking-widest mb-1"
@@ -113,30 +147,16 @@ export default function DashboardPage() {
                 lineHeight: 1.15,
               }}
             >
-              Your Pipeline
+              Your Archieve
             </h1>
             <p className="text-sm mt-1" style={{ color: "#A8A29E" }}>
               Here's where everything stands today.
             </p>
           </div>
-          <button
-            className="flex items-center gap-2 rounded-xl text-sm font-semibold transition-all hover:-translate-y-px"
-            style={{
-              background: "#1C1917",
-              color: "#F7F5F2",
-              padding: "9px 18px",
-              border: "none",
-              cursor: "pointer",
-              boxShadow: "0 1px 3px rgba(28,25,23,0.12)",
-            }}
-          >
-            <Plus size={14} />
-            Add Application
-          </button>
-        </div>
+        </motion.div>
 
         {/* Stats strip */}
-        <div
+        <motion.div
           className="grid mb-8 overflow-hidden"
           style={{
             gridTemplateColumns: "repeat(5, 1fr)",
@@ -145,11 +165,14 @@ export default function DashboardPage() {
             border: "1px solid #E8E4DE",
             borderRadius: "16px",
           }}
+          variants={stagger}
         >
-          {STATUSES.map(({ key, label, dot }) => (
-            <div
+          {STATUSES.map(({ key, label, dot }, idx) => (
+            <motion.div
               key={key}
-              className="bg-white px-5 py-5 transition-colors hover:bg-stone-50"
+              variants={fadeUp(reduce ? 0 : idx * 0.02)}
+              {...(reduce ? {} : hoverLift)}
+              className="bg-white px-5 py-5 transition-colors hover:bg-stone-50 will-change-transform"
             >
               <div className="flex items-center gap-1.5 mb-2.5">
                 <div
@@ -175,21 +198,20 @@ export default function DashboardPage() {
               >
                 {key === "total" ? total : (byStatus[key] ?? 0)}
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Main grid */}
-        <div
-          className="grid gap-5"
-          style={{ gridTemplateColumns: "1fr 300px" }}
-        >
+        <div className="grid gap-5" style={{ gridTemplateColumns: "1fr 300px" }}>
           {/* Left column */}
           <div className="flex flex-col gap-5">
             {/* Funnel card */}
-            <div
+            <motion.div
               className="bg-white rounded-2xl p-7"
               style={{ border: "1px solid #E8E4DE" }}
+              variants={fadeUp(0.02)}
+              {...(reduce ? {} : hoverLift)}
             >
               <p
                 className="text-xs font-semibold uppercase tracking-widest mb-5"
@@ -197,10 +219,12 @@ export default function DashboardPage() {
               >
                 Application Funnel
               </p>
+
               <div className="flex flex-col gap-4 mb-6">
                 {FUNNEL.map(({ key, label, fill }) => {
                   const val = byStatus[key] ?? 0;
                   const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
+
                   return (
                     <div key={key} className="flex items-center gap-4">
                       <span
@@ -209,15 +233,24 @@ export default function DashboardPage() {
                       >
                         {label}
                       </span>
+
                       <div
                         className="flex-1 h-1.5 rounded-full overflow-hidden"
                         style={{ background: "#EFEDE9" }}
                       >
-                        <div
-                          className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${pct}%`, background: fill }}
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ background: fill }}
+                          initial={false}
+                          animate={{ width: `${pct}%` }}
+                          transition={
+                            reduce
+                              ? { duration: 0 }
+                              : { type: "spring", stiffness: 220, damping: 26 }
+                          }
                         />
                       </div>
+
                       <span
                         className="text-xs font-medium w-5 text-right flex-shrink-0"
                         style={{ color: "#A8A29E" }}
@@ -255,12 +288,14 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Recent applications */}
-            <div
+            <motion.div
               className="bg-white rounded-2xl p-7"
               style={{ border: "1px solid #E8E4DE" }}
+              variants={fadeUp(0.04)}
+              {...(reduce ? {} : hoverLift)}
             >
               <div className="flex items-center justify-between mb-4">
                 <p
@@ -269,12 +304,15 @@ export default function DashboardPage() {
                 >
                   Recent Applications
                 </p>
-                <span
+
+                <motion.span
+                  whileHover={reduce ? {} : { x: 2 }}
+                  whileTap={reduce ? {} : { scale: 0.98 }}
                   className="text-xs font-medium cursor-pointer"
                   style={{ color: "#A8A29E" }}
                 >
                   View all →
-                </span>
+                </motion.span>
               </div>
 
               {recent.length === 0 ? (
@@ -285,10 +323,18 @@ export default function DashboardPage() {
                   No applications yet. Add one to get started.
                 </p>
               ) : (
-                <div>
-                  {recent.map((job) => (
-                    <div
+                <AnimatePresence initial={false}>
+                  {recent.map((job, idx) => (
+                    <motion.div
                       key={job.id}
+                      initial={reduce ? false : { opacity: 0, y: 10 }}
+                      animate={reduce ? false : { opacity: 1, y: 0 }}
+                      exit={reduce ? undefined : { opacity: 0, y: 8 }}
+                      transition={{
+                        duration: 0.35,
+                        ease: easeOut,
+                        delay: reduce ? 0 : idx * 0.03,
+                      }}
                       className="flex items-center justify-between py-3.5"
                       style={{ borderBottom: "1px solid #EFEDE9" }}
                     >
@@ -304,6 +350,7 @@ export default function DashboardPage() {
                           {job.location ? ` · ${job.location}` : ""}
                         </div>
                       </div>
+
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <StatusPill status={job.status} />
                         <span className="text-xs" style={{ color: "#A8A29E" }}>
@@ -315,18 +362,20 @@ export default function DashboardPage() {
                             : "—"}
                         </span>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </AnimatePresence>
               )}
-            </div>
+            </motion.div>
           </div>
 
           {/* Sidebar */}
           <div className="flex flex-col gap-4">
-            <div
+            <motion.div
               className="bg-white rounded-2xl p-6"
               style={{ border: "1px solid #E8E4DE" }}
+              variants={fadeUp(0.06)}
+              {...(reduce ? {} : hoverLift)}
             >
               <p
                 className="text-xs font-semibold uppercase tracking-widest mb-2"
@@ -352,23 +401,32 @@ export default function DashboardPage() {
               <p className="text-xs mt-1.5" style={{ color: "#A8A29E" }}>
                 vs. 15% industry average
               </p>
+
               <div
                 className="h-0.5 rounded-full mt-4 overflow-hidden"
                 style={{ background: "#EFEDE9" }}
               >
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
+                <motion.div
+                  className="h-full rounded-full"
+                  initial={false}
+                  animate={{
                     width: `${Math.min(parseFloat(conversionRate), 100)}%`,
-                    background: "#1C1917",
                   }}
+                  transition={
+                    reduce
+                      ? { duration: 0 }
+                      : { type: "spring", stiffness: 220, damping: 26 }
+                  }
+                  style={{ background: "#1C1917" }}
                 />
               </div>
-            </div>
+            </motion.div>
 
-            <div
+            <motion.div
               className="bg-white rounded-2xl p-6"
               style={{ border: "1px solid #E8E4DE" }}
+              variants={fadeUp(0.08)}
+              {...(reduce ? {} : hoverLift)}
             >
               <p
                 className="text-xs font-semibold uppercase tracking-widest mb-2"
@@ -396,24 +454,32 @@ export default function DashboardPage() {
                 {(byStatus.offer ?? 0) !== 1 ? "s" : ""} from {total}{" "}
                 applications
               </p>
+
               <div
                 className="h-0.5 rounded-full mt-4 overflow-hidden"
                 style={{ background: "#EFEDE9" }}
               >
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${Math.min(parseFloat(offerRate), 100)}%`,
-                    background: "#2D6A4F",
-                  }}
+                <motion.div
+                  className="h-full rounded-full"
+                  initial={false}
+                  animate={{ width: `${Math.min(parseFloat(offerRate), 100)}%` }}
+                  transition={
+                    reduce
+                      ? { duration: 0 }
+                      : { type: "spring", stiffness: 220, damping: 26 }
+                  }
+                  style={{ background: "#2D6A4F" }}
                 />
               </div>
-            </div>
+            </motion.div>
 
             {/* Insight card */}
-            <div
+            <motion.div
               className="rounded-2xl p-6"
               style={{ background: "#EFEDE9", border: "1px solid #E8E4DE" }}
+              variants={fadeUp(0.1)}
+              whileHover={reduce ? {} : { y: -2 }}
+              whileTap={reduce ? {} : { scale: 0.99 }}
             >
               <div className="flex items-center gap-1.5 mb-3">
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="#57534E">
@@ -426,6 +492,7 @@ export default function DashboardPage() {
                   Insight
                 </span>
               </div>
+
               <p
                 className="leading-relaxed"
                 style={{
@@ -448,10 +515,10 @@ export default function DashboardPage() {
                 </strong>{" "}
                 get 20% more responses than those sent on Fridays.
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
