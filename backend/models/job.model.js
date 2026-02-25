@@ -58,21 +58,13 @@ jobSchema.index(
   { unique: true, sparse: true },
 );
 
-jobSchema.pre("save", function (next) {
-  if (this.isNew) {
+jobSchema.pre("save", function () {
+  if (this.isNew || this.isModified("status")) {
     this.statusHistory.push({
       status: this.status,
       changedAt: new Date(),
     });
   }
-
-  if (this.isModified("status") && !this.isNew) {
-    this.statusHistory.push({
-      status: this.status,
-      changedAt: new Date(),
-    });
-  }
-  next();
 });
 
 const Job = mongoose.model("Job", jobSchema);
