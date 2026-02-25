@@ -20,6 +20,20 @@ const jobSchema = new Schema(
       index: true,
     },
 
+    statusHistory: [
+      {
+        status: {
+          type: String,
+          enum: ["applied", "interview", "rejected", "offer"],
+          required: true,
+        },
+        changedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     dateApplied: { type: Date, default: Date.now, index: true },
 
     source: {
@@ -43,6 +57,23 @@ jobSchema.index(
   { userId: 1, source: 1, sourceId: 1 },
   { unique: true, sparse: true },
 );
+
+jobSchema.pre("save", function (next) {
+  if (this.isNew) {
+    this.statusHistory.push({
+      status: this.status,
+      changedAt: new Date(),
+    });
+  }
+
+  if (this.isModified("status") && !this.isNew) {
+    this.statusHistory.push({
+      status: this.status,
+      changedAt: new Date(),
+    });
+  }
+  next();
+});
 
 const Job = mongoose.model("Job", jobSchema);
 export default Job;

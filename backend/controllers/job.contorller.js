@@ -142,11 +142,9 @@ const updateJobStatus = async () => {
       });
     }
 
-    const job = await Job.findOneAndUpdate(
-      { _id: id, userId: req.user._id },
-      { status },
-      { new: true },
-    );
+    const job = await Job.findOne({ _id: id, userId: req.user._id });
+    job.status = status;
+    await job.save();
     if (!job) {
       return res.status(404).json({
         message: "Job not found",
