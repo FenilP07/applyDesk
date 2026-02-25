@@ -1,9 +1,21 @@
 {
   "name": "apply_desk",
   "version": "1.0.0",
-  "description": "an apllication progress tracker",
-  "license": "ISC",
-  "author": "",
+  "description": "An application progress tracker backend for ApplyDesk.",
+  "license": "MIT",
+  "author": "Fenil Patel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FenilP07/applyDesk"
+  },
+  "keywords": [
+    "express",
+    "nodejs",
+    "backend",
+    "job-tracker",
+    "applydesk"
+  ],
+  "homepage": "www.applydesk.live",
   "type": "module",
   "main": "index.js",
   "scripts": {
