@@ -35,6 +35,8 @@ const useJobStore = create((set, get) => ({
     byStatus: { applied: 0, interview: 0, offer: 0, rejected: 0 },
   },
 
+  STATUS_OPTIONS: ["all", ...STATUSES],
+
   setFilter: (key, value) =>
     set((s) => ({ filters: { ...s.filters, [key]: value } })),
 
@@ -45,94 +47,135 @@ const useJobStore = create((set, get) => ({
     try {
       const params = buildParams(get().filters);
       const res = await jobApi.list(params);
+
       set({
         jobs: (res.data.data || []).map(normalizeJob),
         loading: false,
       });
+
       return { success: true };
     } catch (error) {
       set({ loading: false, error: normErr(error) });
       return { success: false };
     }
   },
+
   fetchSummary: async () => {
     try {
       const res = await jobApi.summary();
       const data = res.data.data || {};
-      const byStatus = {
-        applied: 0,
-        interview: 0,
-        offer: 0,
-        rejected: 0,
-        ...(data.byStatus || {}),
-      };
-      set({ summary: { total: data.total || 0, byStatus } });
-    } catch (error) {}
+      set({
+        summary: {
+          total: data.total || 0,
+          byStatus: {
+            applied: 0,
+            interview: 0,
+            offer: 0,
+            rejected: 0,
+            ...(data.byStatus || {}),
+          },
+        },
+      });
+    } catch {}
   },
+
   createJob: async (payload) => {
-    set({
-      error: null,
+    set({ error: null });
+
+    const tempId = "temp-" + Date.now();
+
+    const optimisticJob = normalizeJob({
+      ...payload,
+      _id: tempId,
+      createdAt: new Date().toISOString(),
     });
+
+    set((s) => ({
+      jobs: [optimisticJob, ...s.jobs],
+    }));
+
     try {
       const res = await jobApi.create(payload);
       const created = normalizeJob(res.data.data);
+
       set((s) => ({
-        jobs: [created, ...s.jobs],
+        jobs: s.jobs.map((j) => (j.id === tempId ? created : j)),
       }));
+
       get().fetchSummary();
       return { success: true };
     } catch (error) {
-      set({ error: normErr(error) });
+      set((s) => ({
+        jobs: s.jobs.filter((j) => j.id !== tempId),
+        error: normErr(error),
+      }));
+
       return { success: false };
     }
   },
 
   updateJob: async (id, payload) => {
     set({ error: null });
+
+    const previousJobs = get().jobs;
+
+    set((s) => ({
+      jobs: s.jobs.map((j) => (j.id === id ? { ...j, ...payload } : j)),
+    }));
+
     try {
       const res = await jobApi.update(id, payload);
       const updated = normalizeJob(res.data.data);
+
       set((s) => ({
         jobs: s.jobs.map((j) => (j.id === id ? updated : j)),
       }));
+
       get().fetchSummary();
       return { success: true };
     } catch (error) {
-      set({ error: normErr(error) });
+      set({ jobs: previousJobs, error: normErr(error) });
       return { success: false };
     }
   },
 
   deleteJob: async (id) => {
     set({ error: null });
+
+    const previousJobs = get().jobs;
+
+    set((s) => ({
+      jobs: s.jobs.filter((j) => j.id !== id),
+    }));
+
     try {
       await jobApi.remove(id);
-      set((s) => ({ jobs: s.jobs.filter((j) => j.id !== id) }));
       get().fetchSummary();
       return { success: true };
     } catch (error) {
-      set({ error: normErr(error) });
+      set({ jobs: previousJobs, error: normErr(error) });
       return { success: false };
     }
   },
 
   statusUpdate: async (id, payload) => {
+    const previousJobs = get().jobs;
+
+    set((s) => ({
+      jobs: s.jobs.map((j) =>
+        j.id === id ? { ...j, status: payload.status } : j,
+      ),
+    }));
+
     try {
-      set((state) => ({
-        jobs: state.jobs.map((job) =>
-          job.id === id ? { ...job, status: payload.status } : job,
-        ),
-      }));
       await jobApi.statusUpdate(id, payload);
       get().fetchSummary();
       return { success: true };
     } catch (error) {
-      await get().fetchJobs();
+      set({ jobs: previousJobs });
       return { success: false };
     }
   },
-
-  STATUS_OPTIONS: ["all", ...STATUSES],
 }));
 
 export default useJobStore;
