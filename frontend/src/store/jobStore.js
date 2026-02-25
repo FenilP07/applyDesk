@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { jobApi } from "../api/jobApi";
-import { apiClient } from "../api/apiClient";
 
 const normErr = (err) =>
   err?.response?.data?.message || err?.message || "Something went wrong";
@@ -113,6 +112,22 @@ const useJobStore = create((set, get) => ({
       return { success: true };
     } catch (error) {
       set({ error: normErr(error) });
+      return { success: false };
+    }
+  },
+
+  statusUpdate: async (id, payload) => {
+    try {
+      set((state) => ({
+        jobs: state.jobs.map((job) =>
+          job.id === id ? { ...job, status: payload.status } : job,
+        ),
+      }));
+      await jobApi.statusUpdate(id, payload);
+      get().fetchSummary();
+      return { success: true };
+    } catch (error) {
+      await get().fetchJobs();
       return { success: false };
     }
   },

@@ -131,27 +131,30 @@ const getJobSummary = async (req, res) => {
   }
 };
 
-const updateJobStatus = async () => {
+const updateJobStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     if (!status) {
-      return res.status(400).josn({
+      return res.status(400).json({
         message: "Status is required",
       });
     }
 
     const job = await Job.findOne({ _id: id, userId: req.user._id });
-    job.status = status;
-    await job.save();
+
     if (!job) {
       return res.status(404).json({
         message: "Job not found",
       });
     }
 
-    return res.status(200).josn({
+    job.status = status;
+    
+    await job.save();
+
+    return res.status(200).json({
       success: true,
       data: job,
     });

@@ -12,6 +12,65 @@ import {
 } from "lucide-react";
 import { authApi } from "../api/authApi";
 
+// ─── CONFIGURATION & THEME ──────────────────────────────────────────────────
+
+const THEME = {
+  fontSans: "'DM Sans', sans-serif",
+  fontSerif: "'Lora', serif",
+  colors: {
+    textMain: "#1C1917",
+    textMuted: "#78716C",
+    border: "#E8E4DE",
+    bgLight: "#FDFCFB",
+    primary: "#1C1917",
+    accentBlue: "#0369A1",
+    accentGreen: "#166534",
+  },
+};
+
+// ─── REUSABLE UI COMPONENTS ─────────────────────────────────────────────────
+
+const SectionCard = ({ children, style = {} }) => (
+  <section
+    style={{
+      background: "white",
+      padding: "2rem",
+      borderRadius: "24px",
+      border: `1px solid ${THEME.colors.border}`,
+      marginBottom: "2rem",
+      ...style,
+    }}
+  >
+    {children}
+  </section>
+);
+
+const Badge = ({
+  icon: Icon,
+  text,
+  color = THEME.colors.textMuted,
+  bg = "#F5F5F4",
+}) => (
+  <div
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "8px",
+      background: bg,
+      padding: "8px 16px",
+      borderRadius: "999px",
+      color: color,
+      fontSize: "0.85rem",
+      fontWeight: 600,
+      marginBottom: "1rem",
+    }}
+  >
+    <Icon size={14} /> {text}
+  </div>
+);
+
+// ─── MAIN PAGE ──────────────────────────────────────────────────────────────
+
 function InboundSetupPage() {
   const { user } = useAuthStore();
   const [copiedEmail, setCopiedEmail] = useState(false);
@@ -22,16 +81,10 @@ function InboundSetupPage() {
   const forwardingEmail = `${user?.inboundPrefix}@applydesk.live`;
   const filterQuery = `subject:(application OR "received your application" OR "applying for" OR interview OR "hiring team" OR "recruiter" OR "status of your application")`;
 
-  const copyEmail = () => {
-    navigator.clipboard.writeText(forwardingEmail);
-    setCopiedEmail(true);
-    setTimeout(() => setCopiedEmail(false), 2000);
-  };
-
-  const copyFilter = () => {
-    navigator.clipboard.writeText(filterQuery);
-    setCopiedFilter(true);
-    setTimeout(() => setCopiedFilter(false), 2000);
+  const copyToClipboard = (text, setter) => {
+    navigator.clipboard.writeText(text);
+    setter(true);
+    setTimeout(() => setter(false), 2000);
   };
 
   const runTest = async () => {
@@ -52,52 +105,36 @@ function InboundSetupPage() {
         maxWidth: "800px",
         margin: "4rem auto",
         padding: "0 1.5rem",
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: THEME.fontSans,
       }}
     >
+      {/* Header */}
       <header style={{ textAlign: "center", marginBottom: "3rem" }}>
         <h1
           style={{
-            fontFamily: "'Lora', serif",
+            fontFamily: THEME.fontSerif,
             fontSize: "2.5rem",
-            color: "#1C1917",
+            color: THEME.colors.textMain,
             marginBottom: "1rem",
           }}
         >
           Connect your Inbox
         </h1>
-        <p style={{ color: "#78716C", fontSize: "1.1rem", lineHeight: "1.6" }}>
+        <p
+          style={{
+            color: THEME.colors.textMuted,
+            fontSize: "1.1rem",
+            lineHeight: "1.6",
+          }}
+        >
           Automate your job search by forwarding application updates directly to
           your dashboard.
         </p>
       </header>
 
-      <section
-        style={{
-          background: "white",
-          padding: "2rem",
-          borderRadius: "24px",
-          border: "1px solid #E8E4DE",
-          marginBottom: "2rem",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "#F5F5F4",
-            padding: "8px 16px",
-            borderRadius: "999px",
-            color: "#78716C",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            marginBottom: "1rem",
-          }}
-        >
-          <Mail size={14} /> 1. YOUR UNIQUE ADDRESS
-        </div>
+      {/* Step 1: Forwarding Email */}
+      <SectionCard style={{ textAlign: "center" }}>
+        <Badge icon={Mail} text="1. YOUR UNIQUE ADDRESS" />
         <div
           style={{
             display: "flex",
@@ -111,22 +148,22 @@ function InboundSetupPage() {
             style={{
               fontSize: "1.4rem",
               fontWeight: 700,
-              color: "#1C1917",
-              background: "#FDFCFB",
+              color: THEME.colors.textMain,
+              background: THEME.colors.bgLight,
               padding: "12px 24px",
               borderRadius: "12px",
-              border: "1px solid #E8E4DE",
+              border: `1px solid ${THEME.colors.border}`,
             }}
           >
             {forwardingEmail}
           </code>
           <button
-            onClick={copyEmail}
+            onClick={() => copyToClipboard(forwardingEmail, setCopiedEmail)}
             style={{
               padding: "12px",
               borderRadius: "12px",
               border: "none",
-              background: "#1C1917",
+              background: THEME.colors.primary,
               color: "white",
               cursor: "pointer",
             }}
@@ -140,7 +177,7 @@ function InboundSetupPage() {
           rel="noreferrer"
           style={{
             fontSize: "0.85rem",
-            color: "#0369A1",
+            color: THEME.colors.accentBlue,
             textDecoration: "none",
             display: "inline-flex",
             alignItems: "center",
@@ -149,33 +186,16 @@ function InboundSetupPage() {
         >
           Open Gmail Forwarding Settings <ExternalLink size={12} />
         </a>
-      </section>
+      </SectionCard>
 
-      <section
-        style={{
-          background: "#F8FAFC",
-          padding: "2rem",
-          borderRadius: "24px",
-          border: "1px solid #E2E8F0",
-          marginBottom: "2.5rem",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "#E0F2FE",
-            padding: "8px 16px",
-            borderRadius: "999px",
-            color: "#0369A1",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            marginBottom: "1rem",
-          }}
-        >
-          <Filter size={14} /> 2. THE SMART FILTER QUERY
-        </div>
+      {/* Step 2: Filter Query */}
+      <SectionCard style={{ background: "#F8FAFC", borderColor: "#E2E8F0" }}>
+        <Badge
+          icon={Filter}
+          text="2. THE SMART FILTER QUERY"
+          color="#0369A1"
+          bg="#E0F2FE"
+        />
         <p
           style={{
             fontSize: "0.9rem",
@@ -210,7 +230,7 @@ function InboundSetupPage() {
             {filterQuery}
           </code>
           <button
-            onClick={copyFilter}
+            onClick={() => copyToClipboard(filterQuery, setCopiedFilter)}
             style={{
               background: "none",
               border: "none",
@@ -225,8 +245,9 @@ function InboundSetupPage() {
             )}
           </button>
         </div>
-      </section>
+      </SectionCard>
 
+      {/* Step 3: Instructions List */}
       <section>
         <h2
           style={{
@@ -240,7 +261,6 @@ function InboundSetupPage() {
         >
           <Settings size={20} /> Finalize Setup
         </h2>
-
         <div style={{ display: "grid", gap: "1.5rem", marginBottom: "3rem" }}>
           {[
             {
@@ -265,7 +285,7 @@ function InboundSetupPage() {
                 padding: "1.5rem",
                 background: "white",
                 borderRadius: "16px",
-                border: "1px solid #E8E4DE",
+                border: `1px solid ${THEME.colors.border}`,
               }}
             >
               <div
@@ -273,7 +293,7 @@ function InboundSetupPage() {
                   width: "24px",
                   height: "24px",
                   borderRadius: "50%",
-                  background: "#1C1917",
+                  background: THEME.colors.primary,
                   color: "white",
                   display: "flex",
                   alignItems: "center",
@@ -289,7 +309,7 @@ function InboundSetupPage() {
                   style={{
                     fontSize: "1rem",
                     fontWeight: 600,
-                    color: "#1C1917",
+                    color: THEME.colors.textMain,
                     marginBottom: "0.4rem",
                   }}
                 >
@@ -298,7 +318,7 @@ function InboundSetupPage() {
                 <p
                   style={{
                     fontSize: "0.9rem",
-                    color: "#78716C",
+                    color: THEME.colors.textMuted,
                     lineHeight: "1.5",
                   }}
                 >
@@ -309,6 +329,7 @@ function InboundSetupPage() {
           ))}
         </div>
 
+        {/* Test Section */}
         <div
           style={{
             padding: "2rem",
@@ -320,7 +341,7 @@ function InboundSetupPage() {
         >
           <h3
             style={{
-              color: "#166534",
+              color: THEME.colors.accentGreen,
               marginTop: 0,
               display: "flex",
               alignItems: "center",
@@ -346,7 +367,7 @@ function InboundSetupPage() {
               onClick={runTest}
               disabled={isTesting}
               style={{
-                background: "#166534",
+                background: THEME.colors.accentGreen,
                 color: "white",
                 border: "none",
                 padding: "14px 28px",
@@ -368,7 +389,7 @@ function InboundSetupPage() {
           ) : (
             <div
               style={{
-                color: "#166534",
+                color: THEME.colors.accentGreen,
                 fontWeight: "700",
                 display: "flex",
                 alignItems: "center",

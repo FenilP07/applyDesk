@@ -8,7 +8,40 @@ import {
   ExternalLink,
   Info,
   Briefcase,
+  Loader2,
 } from "lucide-react";
+
+// --- LOCAL THEME & STYLES ---
+const COLORS = {
+  textMain: "#1C1917",
+  textMuted: "#A8A29E",
+  border: "#E8E4DE",
+  primary: "#1C1917",
+  accentBlue: "#0369A1",
+  accentRed: "#BE123C",
+  bgUnread: "#F8FAFC",
+  bgRead: "#FFFFFF",
+};
+
+const UI_STYLES = {
+  card: {
+    background: "white",
+    borderRadius: "20px",
+    border: `1px solid ${COLORS.border}`,
+  },
+  button: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "12px 24px",
+    background: COLORS.primary,
+    color: "white",
+    borderRadius: "8px",
+    textDecoration: "none",
+    fontSize: "0.9rem",
+    fontWeight: 600,
+  },
+};
 
 export default function NotificationPage() {
   const { id } = useParams();
@@ -16,34 +49,35 @@ export default function NotificationPage() {
     useNotificationStore();
 
   useEffect(() => {
-    if (id) {
-      fetchNotificationById(id);
-    }
+    if (id) fetchNotificationById(id);
   }, [id, fetchNotificationById]);
+
+  // Format Helper
+  const formatDate = (date, full = false) => {
+    const d = new Date(date);
+    return full
+      ? d.toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })
+      : d.toLocaleDateString();
+  };
 
   // --- 1. DETAIL VIEW (Single Notification) ---
   if (id) {
-    if (loading) {
+    if (loading)
       return (
-        <div style={{ padding: "3rem", textAlign: "center", color: "#A8A29E" }}>
-          Loading notification details...
+        <div
+          style={{
+            padding: "5rem",
+            textAlign: "center",
+            color: COLORS.textMuted,
+          }}
+        >
+          Loading...
         </div>
       );
-    }
-
-    if (!currentNotification) {
+    if (!currentNotification)
       return (
-        <div style={{ padding: "3rem", textAlign: "center" }}>
-          <p>Notification not found.</p>
-          <Link
-            to="/notifications"
-            style={{ color: "#1C1917", fontWeight: 600 }}
-          >
-            Return to list
-          </Link>
-        </div>
+        <div style={{ padding: "5rem", textAlign: "center" }}>Not found.</div>
       );
-    }
 
     const isSystem = currentNotification.type === "system";
 
@@ -53,42 +87,37 @@ export default function NotificationPage() {
           maxWidth: "650px",
           margin: "2.5rem auto",
           padding: "0 1.5rem",
+          fontFamily: "sans-serif",
         }}
       >
         <Link
           to="/notifications"
           style={{
-            display: "inline-flex",
+            display: "flex",
             alignItems: "center",
             gap: "8px",
-            color: "#A8A29E",
+            color: COLORS.textMuted,
             textDecoration: "none",
             fontSize: "0.85rem",
             marginBottom: "1.5rem",
-            transition: "color 0.2s",
           }}
-          onMouseOver={(e) => (e.target.style.color = "#1C1917")}
-          onMouseOut={(e) => (e.target.style.color = "#A8A29E")}
         >
           <ArrowLeft size={16} /> Back to all notifications
         </Link>
 
         <div
           style={{
-            background: "white",
+            ...UI_STYLES.card,
             padding: "2.5rem",
-            borderRadius: "20px",
-            border: "1px solid #E8E4DE",
             boxShadow: "0 10px 25px rgba(0,0,0,0.03)",
           }}
         >
-          {/* Header Label */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              color: isSystem ? "#0369A1" : "#BE123C",
+              color: isSystem ? COLORS.accentBlue : COLORS.accentRed,
               marginBottom: "1.25rem",
             }}
           >
@@ -98,28 +127,24 @@ export default function NotificationPage() {
                 fontWeight: 700,
                 fontSize: "0.75rem",
                 textTransform: "uppercase",
-                letterSpacing: "0.05em",
               }}
             >
               {currentNotification.type} Notification
             </span>
           </div>
 
-          {/* Message */}
           <h2
             style={{
               fontSize: "1.4rem",
-              color: "#1C1917",
+              color: COLORS.textMain,
               marginBottom: "1.5rem",
-              lineHeight: "1.5",
-              fontWeight: 500,
               fontFamily: "'Lora', serif",
+              fontWeight: 500,
             }}
           >
             {currentNotification.message}
           </h2>
 
-          {/* 🔗 System Link / Action Section */}
           {currentNotification.link && (
             <div
               style={{
@@ -137,54 +162,32 @@ export default function NotificationPage() {
                   marginBottom: "1rem",
                 }}
               >
-                This item requires your attention. Click below to proceed to the
-                action page:
+                Please click below to take action:
               </p>
               <a
                 href={currentNotification.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "12px 24px",
-                  background: "#1C1917",
-                  color: "white",
-                  borderRadius: "8px",
-                  textDecoration: "none",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  transition: "transform 0.2s",
-                }}
-                onMouseOver={(e) =>
-                  (e.target.style.transform = "translateY(-1px)")
-                }
-                onMouseOut={(e) => (e.target.style.transform = "translateY(0)")}
+                style={UI_STYLES.button}
               >
                 Go to Action <ExternalLink size={16} />
               </a>
             </div>
           )}
 
-          {/* Footer Metadata */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              color: "#A8A29E",
+              color: COLORS.textMuted,
               fontSize: "0.8rem",
-              borderTop: "1px solid #F5F5F4",
+              borderTop: `1px solid ${COLORS.border}`,
               paddingTop: "1.5rem",
             }}
           >
-            <Clock size={14} />
-            Sent{" "}
-            {new Date(currentNotification.createdAt).toLocaleString(undefined, {
-              dateStyle: "long",
-              timeStyle: "short",
-            })}
+            <Clock size={14} /> Sent{" "}
+            {formatDate(currentNotification.createdAt, true)}
           </div>
         </div>
       </div>
@@ -194,49 +197,44 @@ export default function NotificationPage() {
   // --- 2. LIST VIEW (All Notifications) ---
   return (
     <div
-      style={{ maxWidth: "800px", margin: "3rem auto", padding: "0 1.5rem" }}
+      style={{
+        maxWidth: "800px",
+        margin: "3rem auto",
+        padding: "0 1.5rem",
+        fontFamily: "sans-serif",
+      }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          marginBottom: "2rem",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: "1.8rem",
-              fontWeight: 600,
-              color: "#1C1917",
-              fontFamily: "'Lora', serif",
-            }}
-          >
-            Notifications
-          </h1>
-          <p style={{ color: "#A8A29E", fontSize: "0.9rem", marginTop: "4px" }}>
-            Stay updated with your applications and system alerts.
-          </p>
-        </div>
-      </div>
+      <header style={{ marginBottom: "2rem" }}>
+        <h1
+          style={{
+            fontSize: "1.8rem",
+            fontWeight: 600,
+            color: COLORS.textMain,
+            fontFamily: "'Lora', serif",
+          }}
+        >
+          Notifications
+        </h1>
+        <p style={{ color: COLORS.textMuted, fontSize: "0.9rem" }}>
+          Stay updated with your applications.
+        </p>
+      </header>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {notifications.length === 0 ? (
           <div
             style={{
+              ...UI_STYLES.card,
               textAlign: "center",
               padding: "4rem",
-              background: "white",
-              borderRadius: "16px",
-              border: "1px dashed #E8E4DE",
+              borderStyle: "dashed",
             }}
           >
             <Bell
               size={32}
-              style={{ color: "#E8E4DE", marginBottom: "1rem" }}
+              style={{ color: COLORS.border, marginBottom: "1rem" }}
             />
-            <p style={{ color: "#A8A29E" }}>No notifications yet.</p>
+            <p style={{ color: COLORS.textMuted }}>No notifications yet.</p>
           </div>
         ) : (
           notifications.map((n) => (
@@ -246,24 +244,19 @@ export default function NotificationPage() {
               style={{
                 display: "block",
                 padding: "1.25rem 1.5rem",
-                background: n.read ? "white" : "#F8FAFC",
-                border: "1px solid",
-                borderColor: n.read ? "#E8E4DE" : "#E2E8F0",
+                background: n.read ? COLORS.bgRead : COLORS.bgUnread,
+                border: `1px solid ${n.read ? COLORS.border : "#E2E8F0"}`,
                 borderRadius: "16px",
                 textDecoration: "none",
                 color: "inherit",
-                transition: "all 0.2s ease",
+                transition: "transform 0.2s",
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = "translateX(4px)";
-                e.currentTarget.style.borderColor = "#D6D3D1";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = "translateX(0)";
-                e.currentTarget.style.borderColor = n.read
-                  ? "#E8E4DE"
-                  : "#E2E8F0";
-              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.transform = "translateX(4px)")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.transform = "translateX(0)")
+              }
             >
               <div
                 style={{
@@ -276,9 +269,8 @@ export default function NotificationPage() {
                 <div
                   style={{
                     fontWeight: n.read ? 400 : 600,
-                    color: "#1C1917",
+                    color: COLORS.textMain,
                     fontSize: "0.95rem",
-                    lineHeight: "1.4",
                   }}
                 >
                   {n.message}
@@ -289,8 +281,7 @@ export default function NotificationPage() {
                       width: "8px",
                       height: "8px",
                       borderRadius: "50%",
-                      background: "#BE123C",
-                      flexShrink: 0,
+                      background: COLORS.accentRed,
                       marginTop: "6px",
                     }}
                   />
@@ -299,15 +290,14 @@ export default function NotificationPage() {
               <div
                 style={{
                   fontSize: "0.75rem",
-                  color: "#A8A29E",
+                  color: COLORS.textMuted,
                   marginTop: "8px",
                   display: "flex",
                   alignItems: "center",
                   gap: "4px",
                 }}
               >
-                <Clock size={12} />
-                {new Date(n.createdAt).toLocaleDateString()}
+                <Clock size={12} /> {formatDate(n.createdAt)}
               </div>
             </Link>
           ))
