@@ -7,7 +7,7 @@ const authApi = {
   me: () => apiClient.get("/api/auth/me"),
   refresh: () => apiClient.post("/api/auth/refresh"),
   logout: () => apiClient.post("/api/auth/logout"),
-  test: () => apiClient.post("/auth/test-connection"),
+  test: () => apiClient.post("/api/auth/test-connection"),
 };
 
 export { authApi };
