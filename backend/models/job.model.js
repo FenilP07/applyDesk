@@ -29,7 +29,6 @@ const jobSchema = new Schema(
       index: true,
     },
 
-    // ✅ NEW: for dedupe (Resend inbound email id)
     sourceId: { type: String, default: null },
 
     sourceUrl: { type: String, default: null },
@@ -37,11 +36,9 @@ const jobSchema = new Schema(
   { timestamps: true },
 );
 
-// Keep your existing indexes
 jobSchema.index({ userId: 1, company: 1 });
 jobSchema.index({ userId: 1, title: 1 });
 
-// ✅ NEW: DB-level dedupe for inbound emails (prevents duplicates on retries)
 jobSchema.index(
   { userId: 1, source: 1, sourceId: 1 },
   { unique: true, sparse: true },

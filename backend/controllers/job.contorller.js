@@ -131,4 +131,44 @@ const getJobSummary = async (req, res) => {
   }
 };
 
-export { createJob, deleteJob, getJobs, updateJob, getJobSummary };
+const updateJobStatus = async () => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).josn({
+        message: "Status is required",
+      });
+    }
+
+    const job = await Job.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
+      { status },
+      { new: true },
+    );
+    if (!job) {
+      return res.status(404).json({
+        message: "Job not found",
+      });
+    }
+
+    return res.status(200).josn({
+      success: true,
+      data: job,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to update job status",
+    });
+  }
+};
+
+export {
+  createJob,
+  deleteJob,
+  getJobs,
+  updateJob,
+  getJobSummary,
+  updateJobStatus,
+};
