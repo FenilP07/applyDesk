@@ -132,4 +132,21 @@ const me = async (req, res) => {
   return res.status(200).json({ success: true, user: req.user });
 };
 
-export { googleSignIn, refresh, logout, me };
+const testConnection = async (req, res) => {
+  try {
+    const fakeBody = {
+      type: "email.received",
+      data: {
+        email_id: `test_sim_${Date.now()}`,
+        test_email: `${req.user.inboundPrefix}@applydesk.live`,
+      },
+    };
+
+    await handleResendWebhook({ body: fakeBody }, res);
+  } catch (error) {
+    console.error("Test Connection Error:", error);
+    res.status(500).json({ message: "Test failed" });
+  }
+};
+
+export { googleSignIn, refresh, logout, me,testConnection };

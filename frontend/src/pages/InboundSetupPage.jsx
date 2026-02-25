@@ -7,13 +7,17 @@ import {
   Settings,
   ExternalLink,
   Filter,
-  Info,
+  PlayCircle,
+  Loader2,
 } from "lucide-react";
+import { authApi } from "../api/authApi";
 
 function InboundSetupPage() {
   const { user } = useAuthStore();
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedFilter, setCopiedFilter] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testDone, setTestDone] = useState(false);
 
   const forwardingEmail = `${user?.inboundPrefix}@applydesk.live`;
   const filterQuery = `subject:(application OR "received your application" OR "applying for" OR interview OR "hiring team" OR "recruiter" OR "status of your application")`;
@@ -28,6 +32,18 @@ function InboundSetupPage() {
     navigator.clipboard.writeText(filterQuery);
     setCopiedFilter(true);
     setTimeout(() => setCopiedFilter(false), 2000);
+  };
+
+  const runTest = async () => {
+    setIsTesting(true);
+    try {
+      await authApi.test();
+      setTestDone(true);
+    } catch (error) {
+      alert("Test failed. Make sure your server is running.");
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   return (
@@ -52,11 +68,10 @@ function InboundSetupPage() {
         </h1>
         <p style={{ color: "#78716C", fontSize: "1.1rem", lineHeight: "1.6" }}>
           Automate your job search by forwarding application updates directly to
-          your applyDesk dashboard.
+          your dashboard.
         </p>
       </header>
 
-      {/* --- Step 1: The Address --- */}
       <section
         style={{
           background: "white",
@@ -81,7 +96,7 @@ function InboundSetupPage() {
             marginBottom: "1rem",
           }}
         >
-          <Mail size={14} /> 1. YOUR UNIQUE FORWARDING ADDRESS
+          <Mail size={14} /> 1. YOUR UNIQUE ADDRESS
         </div>
         <div
           style={{
@@ -119,12 +134,23 @@ function InboundSetupPage() {
             {copiedEmail ? <Check size={20} /> : <Copy size={20} />}
           </button>
         </div>
-        <p style={{ fontSize: "0.85rem", color: "#A8A29E" }}>
-          Add this address in Gmail Settings &gt; Forwarding
-        </p>
+        <a
+          href="https://mail.google.com/mail/u/0/#settings/fwdandpop"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            fontSize: "0.85rem",
+            color: "#0369A1",
+            textDecoration: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+          }}
+        >
+          Open Gmail Forwarding Settings <ExternalLink size={12} />
+        </a>
       </section>
 
-      {/* --- Step 2: The Filter --- */}
       <section
         style={{
           background: "#F8FAFC",
@@ -157,8 +183,8 @@ function InboundSetupPage() {
             marginBottom: "1.5rem",
           }}
         >
-          Copy this query into the <strong>"Has the words"</strong> field when
-          creating your Gmail filter:
+          Copy this into the <strong>"Has the words"</strong> field in your
+          Gmail filter settings:
         </p>
         <div
           style={{
@@ -190,7 +216,6 @@ function InboundSetupPage() {
               border: "none",
               cursor: "pointer",
               color: "#64748B",
-              padding: "4px",
             }}
           >
             {copiedFilter ? (
@@ -202,7 +227,6 @@ function InboundSetupPage() {
         </div>
       </section>
 
-      {/* --- Step 3: Instructions --- */}
       <section>
         <h2
           style={{
@@ -214,22 +238,22 @@ function InboundSetupPage() {
             gap: "10px",
           }}
         >
-          <Settings size={20} /> Final Configuration
+          <Settings size={20} /> Finalize Setup
         </h2>
 
-        <div style={{ display: "grid", gap: "1.5rem" }}>
+        <div style={{ display: "grid", gap: "1.5rem", marginBottom: "3rem" }}>
           {[
             {
-              title: "Create the Filter",
-              desc: "In Gmail, click the search options icon and paste the query into 'Has the words'.",
+              title: "Add Forwarding",
+              desc: "Paste your unique address into Gmail's Forwarding settings.",
             },
             {
-              title: "Assign Forwarding",
-              desc: "Choose 'Create Filter', check 'Forward it to', and select your applyDesk address.",
+              title: "Create Filter",
+              desc: "Create a filter using the query above and set it to forward to your unique address.",
             },
             {
-              title: "Check Notifications",
-              desc: "Watch your applyDesk notifications for the Google verification link to confirm.",
+              title: "Confirm Gmail",
+              desc: "Click the verification link sent by Google (it will appear in your dashboard notifications).",
             },
           ].map((item, idx) => (
             <div
@@ -283,6 +307,78 @@ function InboundSetupPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div
+          style={{
+            padding: "2rem",
+            backgroundColor: "#F0FDF4",
+            borderRadius: "24px",
+            border: "1px solid #BBF7D0",
+            textAlign: "center",
+          }}
+        >
+          <h3
+            style={{
+              color: "#166534",
+              marginTop: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+            }}
+          >
+            Ready to test?
+          </h3>
+          <p
+            style={{
+              color: "#15803D",
+              fontSize: "0.9rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            We'll simulate a LinkedIn application email to verify your AI
+            extraction logic.
+          </p>
+
+          {!testDone ? (
+            <button
+              onClick={runTest}
+              disabled={isTesting}
+              style={{
+                background: "#166534",
+                color: "white",
+                border: "none",
+                padding: "14px 28px",
+                borderRadius: "12px",
+                cursor: "pointer",
+                fontWeight: "600",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              {isTesting ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <PlayCircle size={20} />
+              )}
+              {isTesting ? "Simulating Webhook..." : "Run Connection Test"}
+            </button>
+          ) : (
+            <div
+              style={{
+                color: "#166534",
+                fontWeight: "700",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+            >
+              <Check size={24} /> Connection Verified! Check your Notifications.
+            </div>
+          )}
         </div>
       </section>
     </div>

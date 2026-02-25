@@ -5,8 +5,10 @@ import {
   refresh,
   logout,
   me,
+  testConnection,
 } from "../controllers/user.controller.js";
 import { isLoggedIn } from "../middlewares/auth.middleware.js";
+import { handleResendWebhook } from "../controllers/automation.controller.js";
 
 const router = express.Router();
 
@@ -14,6 +16,6 @@ router.post("/google", googleSignIn);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 router.get("/me", isLoggedIn, me);
-
+router.post("/test-connection", isLoggedIn, testConnection);
 
 export default router;

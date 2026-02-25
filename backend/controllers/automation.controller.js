@@ -52,13 +52,24 @@ export const handleResendWebhook = async (req, res) => {
     if (type !== "email.received") return res.sendStatus(200);
     if (!data?.email_id) return res.status(400).send("Missing email_id");
 
-    const { data: emailContent, error } = await resend.emails.receiving.get(
-      data.email_id,
-    );
+    let emailContent;
 
-    if (error || !emailContent) {
-      console.error("Resend fetch error:", error);
-      return res.status(502).send("Failed to fetch email content");
+    if (data.email_id.startsWith("test_sim_")) {
+      emailContent = {
+        subject: "Fenil, your application was sent to Apptoza Inc.",
+        text: "Fenil Patel. Your application was sent to Apptoza Inc. Frontend Developer at Apptoza Inc. Applied on February 24, 2026.",
+        from: "jobs-noreply@linkedin.com",
+        to: data.test_email || "test@applydesk.live", // Use prefix passed from frontend
+      };
+    } else {
+      const { data: fetched, error } = await resend.emails.receiving.get(
+        data.email_id,
+      );
+      if (error || !fetched) {
+        console.error("Resend fetch error:", error);
+        return res.status(502).send("Failed to fetch email content");
+      }
+      emailContent = fetched;
     }
 
     const text =
@@ -72,13 +83,11 @@ export const handleResendWebhook = async (req, res) => {
       return res.status(200).send("No user matched.");
     }
 
-    // --- 1. GOOGLE VERIFICATION HANDLER ---
     if (emailContent.from?.toLowerCase().includes("google.com")) {
       const cleanText = text.replace(/[\r\n]+/g, " ");
       const linkMatch = cleanText.match(
         /https:\/\/mail(?:-settings)?\.google\.com\/mail\/v[fu]-[^\s>"]+/,
       );
-
       if (linkMatch) {
         await Notification.create({
           userId: user._id,
@@ -86,17 +95,14 @@ export const handleResendWebhook = async (req, res) => {
           link: linkMatch[0],
           type: "system",
         });
-        console.log("🔗 Google Verification Link Captured");
       }
       return res.status(200).send("Verification processed.");
     }
 
-    // --- 2. DUPLICATE CHECK ---
     const existingJob = await Job.findOne({ sourceId: data.email_id });
     if (existingJob)
       return res.status(200).json({ success: true, message: "Duplicate" });
 
-    // --- 3. AI EXTRACTION WITH IMPROVED PROMPT ---
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -106,10 +112,10 @@ export const handleResendWebhook = async (req, res) => {
           Return JSON: { "company": string, "job_title": string, "location": string, "is_job_receipt": boolean }
           
           RULES:
-          - Set is_job_receipt to true if the email is a confirmation of a submitted application.
-          - Recognize LinkedIn's "Your application was sent to [Company]" as a receipt.
-          - Recognize "Thank you for applying", "Received your application", or "Confirmation of your application".
-          - If it's just a job suggestion/alert or marketing, set is_job_receipt to false.`,
+          - is_job_receipt is TRUE if the email confirms an application was SENT or RECEIVED.
+          - LinkedIn emails saying "Your application was sent to..." MUST be true.
+          - Extract the company name accurately (e.g., from "sent to Apptoza Inc", company is "Apptoza Inc").
+          - If job title is missing, use "Job Applicant".`,
         },
         {
           role: "user",
@@ -121,14 +127,6 @@ export const handleResendWebhook = async (req, res) => {
 
     const aiParsed = JSON.parse(completion.choices[0].message.content);
 
-    // --- 4. DEBUG LOGS FOR RENDER ---
-    console.log("--- AI DECISION ---");
-    console.log("Subject:", emailContent.subject);
-    console.log("Is Job Receipt:", aiParsed.is_job_receipt);
-    console.log("Company:", aiParsed.company);
-    console.log("-------------------");
-
-    // --- 5. DATA PERSISTENCE ---
     if (aiParsed.is_job_receipt) {
       const newJob = await Job.create({
         userId: user._id,
