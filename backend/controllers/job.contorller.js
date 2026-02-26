@@ -59,7 +59,7 @@ const getJobs = async (req, res) => {
   }
 };
 
-export const updateJob = async (req, res) => {
+const updateJob = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
