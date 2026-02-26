@@ -33,12 +33,34 @@ const processedEmailSchema = new Schema(
       type: String,
       default: null,
     },
+
+    needsReview: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    reviewReason: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
+    eventType: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
+    snippet: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true },
 );
 
 processedEmailSchema.index({ userId: 1, emailId: 1 }, { unique: true });
-
 processedEmailSchema.index({ userId: 1, emailHash: 1 });
 
 processedEmailSchema.index(
