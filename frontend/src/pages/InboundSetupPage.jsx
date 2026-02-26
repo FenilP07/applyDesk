@@ -79,8 +79,10 @@ function InboundSetupPage() {
   const [testDone, setTestDone] = useState(false);
 
   const forwardingEmail = `${user?.inboundPrefix}@applydesk.live`;
-  const filterQuery = `(
-  from:(jobs-noreply@linkedin.com OR linkedin.com OR greenhouse.io OR lever.co OR myworkday.com OR workday.com OR icims.com OR taleo.net OR smartrecruiters.com)
+const filterQuery = `(
+  from:(jobs-noreply@linkedin.com OR talent-noreply@linkedin.com OR
+        greenhouse.io OR lever.co OR myworkday.com OR workday.com OR
+        icims.com OR taleo.net OR smartrecruiters.com)
   OR subject:(
     "your application was sent to" OR
     "your application to" OR
@@ -88,12 +90,28 @@ function InboundSetupPage() {
     "we received your application" OR
     "thank you for applying" OR
     "thanks for applying" OR
-    interview OR "phone screen" OR "schedule" OR availability OR "calendar invite" OR
+
+    interview OR "phone screen" OR "technical interview" OR
+    "next steps" OR "coding challenge" OR assessment OR
+    "schedule interview" OR
+    (interview AND availability) OR
+    "calendar invite" OR
+
     offer OR "employment offer" OR compensation OR salary OR congratulations OR
-    "not moving forward" OR "regret to inform" OR unfortunately OR rejected OR declined
+
+    "not moving forward" OR "moving forward with other candidates" OR
+    "regret to inform" OR unfortunately OR rejected OR declined OR
+    "after careful consideration" OR "position has been filled" OR
+    "selected another candidate"
   )
 )
--(newsletter OR marketing OR promotion OR sale OR webinar OR "event reminder")`;
+-(newsletter OR marketing OR promotion OR sale OR webinar OR "event reminder"
+  OR unsubscribe OR "view in browser" OR "manage preferences"
+  OR "job alert" OR premium OR benefits OR invoice OR subscription
+  OR purchase OR course OR batch
+  OR "verify your candidate account" OR "confirm your email"
+  OR "next week's schedule"
+)`;
 
   const copyToClipboard = (text, setter) => {
     navigator.clipboard.writeText(text);

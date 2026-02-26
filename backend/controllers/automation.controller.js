@@ -1,4 +1,3 @@
-
 import crypto from "crypto";
 import { Resend } from "resend";
 import OpenAI from "openai";
@@ -135,6 +134,16 @@ function isValidTitle(title) {
 }
 
 // =========================
+// Status guards (prevent bad AI flips)
+// =========================
+const STATUS_RANK = { applied: 1, interview: 2, offer: 3, rejected: 4 };
+
+function isForwardMove(current, next) {
+  if (!current || !next) return true;
+  return (STATUS_RANK[next] || 0) >= (STATUS_RANK[current] || 0);
+}
+
+// =========================
 // User matching (inbound prefix routing)
 // =========================
 async function findUser(emailContent) {
@@ -160,223 +169,6 @@ async function findUser(emailContent) {
   const fromEmail = extractEmail(emailContent.from || "");
   if (!fromEmail) return null;
   return await User.findOne({ email: fromEmail.toLowerCase() });
-}
-
-// =========================
-// Provider template parsing
-// =========================
-function templateParse(subject = "", text = "", from = "") {
-  const s = safeLower(subject);
-  const t = safeLower(text);
-  const f = safeLower(from);
-  const combined = `${s}\n${t}`;
-
-  // ---- LinkedIn: "Your application was sent to X"
-  const liReceipt = combined.match(
-    /your application was sent to\s+([^\.\n\r]+?)(?:\.|\n|$)/i,
-  );
-  if (liReceipt) {
-    const company = cleanCompanyName(liReceipt[1]?.trim());
-    return {
-      is_job_related: true,
-      event_type: "application_confirmed",
-      next_status: "applied",
-      company: company || null,
-      job_title: null,
-      location: null,
-      job_url: null,
-      confidence: 0.95,
-      provider: "linkedin",
-    };
-  }
-
-  // ---- Generic extraction: "interest in the <Role> position at <Company>"
-  // (works for many ATS + rejection/interview/offer emails)
-  const interestMatch = combined.match(
-    /interest in (?:the )?(.+?) position at (.+?)(?:\.|\n|$)/i,
-  );
-  if (interestMatch) {
-    const title = cleanJobTitle(interestMatch[1]);
-    const company = cleanCompanyName(interestMatch[2]);
-
-    const isReject =
-      /(not moving forward|regret to inform|unfortunately|declined|we will not be proceeding)/i.test(
-        combined,
-      );
-    const isInterview =
-      /(interview|phone screen|schedule|availability|calendar invite|video interview)/i.test(
-        combined,
-      );
-    const isOffer =
-      /(employment offer|offer|compensation|salary|congratulations)/i.test(
-        combined,
-      );
-
-    let event_type = "other";
-    let next_status = null;
-    let confidence = 0.78;
-
-    if (isReject) {
-      event_type = "rejection";
-      next_status = "rejected";
-      confidence = 0.9;
-    } else if (isInterview) {
-      event_type = "interview";
-      next_status = "interview";
-      confidence = 0.85;
-    } else if (isOffer) {
-      event_type = "offer";
-      next_status = "offer";
-      confidence = 0.85;
-    }
-
-    return {
-      is_job_related: true,
-      event_type,
-      next_status,
-      company: company || null,
-      job_title: title || null,
-      location: null,
-      job_url: null,
-      confidence,
-      provider: "generic_position_at_company",
-    };
-  }
-
-  // ---- Greenhouse-ish
-  // Subjects often: "Your application to <Company> for <Role>" or "<Company> - Application Received"
-  const gh1 = subject.match(/your application to\s+(.+?)\s+for\s+(.+)/i);
-  if (gh1) {
-    return {
-      is_job_related: true,
-      event_type: "application_confirmed",
-      next_status: "applied",
-      company: cleanCompanyName(gh1[1]),
-      job_title: cleanJobTitle(gh1[2]),
-      location: null,
-      job_url: null,
-      confidence: 0.9,
-      provider: "greenhouse",
-    };
-  }
-
-  if (/greenhouse\.io/i.test(combined) || /@greenhouse\.io/i.test(f)) {
-    // interview / rejection / offer signals still useful
-    if (
-      /(interview|phone screen|schedule|availability|calendar invite)/i.test(
-        combined,
-      )
-    ) {
-      return {
-        is_job_related: true,
-        event_type: "interview",
-        next_status: "interview",
-        company: null,
-        job_title: null,
-        location: null,
-        job_url: null,
-        confidence: 0.78,
-        provider: "greenhouse",
-      };
-    }
-  }
-
-  // ---- Lever
-  // Often includes "Thanks for applying to <Company>" or "Your application to <Company>"
-  const leverThanks = combined.match(
-    /thanks for applying to\s+([^\n\r]+?)(?:\.|\n|$)/i,
-  );
-  if (leverThanks) {
-    return {
-      is_job_related: true,
-      event_type: "application_confirmed",
-      next_status: "applied",
-      company: cleanCompanyName(leverThanks[1]),
-      job_title: null,
-      location: null,
-      job_url: null,
-      confidence: 0.88,
-      provider: "lever",
-    };
-  }
-
-  // ---- Workday-ish (very variable)
-  if (/workday/i.test(combined)) {
-    if (
-      /(application received|thank you for applying|we received your application)/i.test(
-        combined,
-      )
-    ) {
-      return {
-        is_job_related: true,
-        event_type: "application_confirmed",
-        next_status: "applied",
-        company: null,
-        job_title: null,
-        location: null,
-        job_url: null,
-        confidence: 0.72,
-        provider: "workday",
-      };
-    }
-  }
-
-  // ---- Generic rejections / interviews / offers (cheap + fast)
-  if (
-    /(regret to inform|not moving forward|unfortunately|we have decided|we will not be proceeding|declined)/i.test(
-      combined,
-    )
-  ) {
-    return {
-      is_job_related: true,
-      event_type: "rejection",
-      next_status: "rejected",
-      company: null,
-      job_title: null,
-      location: null,
-      job_url: null,
-      confidence: 0.85,
-      provider: "generic",
-    };
-  }
-
-  if (
-    /(interview|schedule a call|availability|calendar invite|phone screen|video interview)/i.test(
-      combined,
-    )
-  ) {
-    return {
-      is_job_related: true,
-      event_type: "interview",
-      next_status: "interview",
-      company: null,
-      job_title: null,
-      location: null,
-      job_url: null,
-      confidence: 0.75,
-      provider: "generic",
-    };
-  }
-
-  if (
-    /(offer|compensation|salary|contract|employment offer|congratulations)/i.test(
-      combined,
-    )
-  ) {
-    return {
-      is_job_related: true,
-      event_type: "offer",
-      next_status: "offer",
-      company: null,
-      job_title: null,
-      location: null,
-      job_url: null,
-      confidence: 0.75,
-      provider: "generic",
-    };
-  }
-
-  return null;
 }
 
 // =========================
@@ -414,7 +206,7 @@ async function findTargetJob({ userId, company, jobTitle, jobUrl }) {
     if (byCompany) return byCompany;
   }
 
-  //  Fallback for update emails:
+  // Fallback for update emails:
   // If we know company but not title, pick most recent open job at that company
   if (c && !jt) {
     const recentOpen = await Job.findOne({
@@ -430,7 +222,7 @@ async function findTargetJob({ userId, company, jobTitle, jobUrl }) {
 }
 
 // =========================
-// OpenAI parsing (fallback)
+// OpenAI parsing (only parser)
 // =========================
 async function aiParseEmail({ subject, text }) {
   // hard timeout so webhook never hangs too long
@@ -462,7 +254,6 @@ Return JSON:
 
 Rules:
 - "application_confirmed" means application sent/received.
-- LinkedIn "Your application was sent to" => is_job_related true, event_type application_confirmed, next_status applied.
 - "rejection" => next_status rejected
 - "interview" => next_status interview
 - "offer" => next_status offer
@@ -485,6 +276,7 @@ Rules:
       company: cleanCompanyName(parsed.company),
       job_title: cleanJobTitle(parsed.job_title),
       job_url: normalizeUrl(parsed.job_url),
+      confidence: Number(parsed.confidence ?? 0),
     };
   } finally {
     clearTimeout(timer);
@@ -553,7 +345,7 @@ function emitNotification(userId, payload) {
 }
 
 // =========================
-// Main webhook
+// Main webhook (AI-only)
 // =========================
 export const handleResendWebhook = async (req, res) => {
   try {
@@ -561,6 +353,7 @@ export const handleResendWebhook = async (req, res) => {
     if (type !== "email.received") return res.sendStatus(200);
     if (!data?.email_id) return res.status(400).send("Missing email_id");
 
+    // 1) Fetch email content
     let emailContent;
     if (String(data.email_id).startsWith("test_sim_")) {
       emailContent = {
@@ -581,18 +374,21 @@ export const handleResendWebhook = async (req, res) => {
       emailContent = fetched;
     }
 
+    // 2) Clean text
     const rawText =
       emailContent.text?.trim() || stripHtml(emailContent.html || "");
     const text = stripNoiseBlocks(rawText);
 
+    // 3) Find user
     const user = await findUser(emailContent);
     if (!user) {
       console.log(
-        ` No user found for: ${emailContent.from} -> ${emailContent.to}`,
+        `No user found for: ${emailContent.from} -> ${emailContent.to}`,
       );
       return res.status(200).send("No user matched.");
     }
 
+    // 4) Gmail forwarding verification
     const handledVerification = await handleGmailForwardingIfAny({
       user,
       text,
@@ -606,6 +402,7 @@ export const handleResendWebhook = async (req, res) => {
       return res.status(200).send("Verification processed.");
     }
 
+    // 5) Idempotency: by emailId
     const alreadyProcessed = await ProcessedEmail.findOne({
       userId: user._id,
       emailId: data.email_id,
@@ -617,6 +414,7 @@ export const handleResendWebhook = async (req, res) => {
         .json({ success: true, message: "Duplicate email event" });
     }
 
+    // 6) Create ProcessedEmail record early (locks event)
     const subject = emailContent.subject || "";
     const from = extractEmail(emailContent.from || "");
     const clippedForHash = clipText(`${subject}\n\n${text}`, 20000);
@@ -639,12 +437,8 @@ export const handleResendWebhook = async (req, res) => {
       throw e;
     }
 
-    let parsed = templateParse(subject, text, from);
-
-    if (!parsed) {
-      const cached = await getCachedParse({ userId: user._id, emailHash });
-      if (cached) parsed = cached;
-    }
+    // 7) Parse (AI-only) with cache by emailHash
+    let parsed = await getCachedParse({ userId: user._id, emailHash });
 
     if (!parsed) {
       const clipped = clipText(stripNoiseBlocks(text), 16000);
@@ -652,17 +446,26 @@ export const handleResendWebhook = async (req, res) => {
       await cacheParse({ userId: user._id, emailHash, parsed });
     }
 
-    const conf = Number(parsed?.confidence ?? 0);
-    if (!parsed?.is_job_related || conf < 0.6) {
+    // Normalize fields again (defensive)
+    parsed = {
+      ...parsed,
+      company: cleanCompanyName(parsed.company),
+      job_title: cleanJobTitle(parsed.job_title),
+      job_url: normalizeUrl(parsed.job_url),
+      confidence: Number(parsed.confidence ?? 0),
+    };
+
+    // 8) Confidence gating
+    const conf = parsed.confidence;
+
+    // Ignore low confidence / not job related
+    if (!parsed.is_job_related || conf < 0.65) {
       return res
         .status(200)
         .json({ success: true, ignored: true, confidence: conf });
     }
 
-    parsed.company = cleanCompanyName(parsed.company);
-    parsed.job_title = cleanJobTitle(parsed.job_title);
-    parsed.job_url = normalizeUrl(parsed.job_url);
-
+    // 9) Try to match an existing job
     let job = await findTargetJob({
       userId: user._id,
       company: parsed.company,
@@ -670,8 +473,11 @@ export const handleResendWebhook = async (req, res) => {
       jobUrl: parsed.job_url,
     });
 
-    const shouldCreate = parsed.event_type === "application_confirmed";
+    // Create jobs only for confirmed application at higher confidence
+    const shouldCreate =
+      parsed.event_type === "application_confirmed" && conf >= 0.75;
 
+    // 10) If update-type email but no job matched -> send review flow
     if (!job && !shouldCreate) {
       await ProcessedEmail.updateOne(
         { userId: user._id, emailId: data.email_id },
@@ -708,10 +514,12 @@ export const handleResendWebhook = async (req, res) => {
       });
     }
 
+    // 11) Create job
     if (!job && shouldCreate) {
       const okCompany = isValidCompanyName(parsed.company);
       const okTitle = isValidTitle(parsed.job_title);
 
+      // If both missing -> review
       if (!okCompany && !okTitle) {
         await ProcessedEmail.updateOne(
           { userId: user._id, emailId: data.email_id },
@@ -782,6 +590,7 @@ export const handleResendWebhook = async (req, res) => {
       return res.status(200).json({ success: true, created: true });
     }
 
+    // 12) Update existing job (safe status transitions)
     let changed = false;
 
     if (!job.location && parsed.location) {
@@ -793,9 +602,46 @@ export const handleResendWebhook = async (req, res) => {
       changed = true;
     }
 
-    if (parsed.next_status && job.status !== parsed.next_status) {
-      job.status = parsed.next_status;
-      changed = true;
+    // Only apply status updates at stronger confidence
+    if (
+      parsed.next_status &&
+      conf >= 0.7 &&
+      job.status !== parsed.next_status
+    ) {
+      if (isForwardMove(job.status, parsed.next_status)) {
+        job.status = parsed.next_status;
+        changed = true;
+      } else {
+        // Status regression guard -> review, don't auto-change
+        await ProcessedEmail.updateOne(
+          { userId: user._id, emailId: data.email_id },
+          {
+            $set: {
+              needsReview: true,
+              reviewReason: "status_regression_guard",
+              eventType: parsed.event_type,
+              snippet: clipText(text, 400),
+              aiParsed: parsed,
+            },
+          },
+          { upsert: false },
+        );
+
+        await Notification.create({
+          userId: user._id,
+          type: "system",
+          message:
+            "Action needed: We detected a status update, but it looks like it would move your job backwards. Please review.",
+          link: `/inbox/review?emailId=${encodeURIComponent(data.email_id)}`,
+        });
+
+        emitNotification(user._id, {
+          type: "system",
+          message:
+            "Action needed: Review this email before we update the job status.",
+          link: `/inbox/review?emailId=${data.email_id}`,
+        });
+      }
     }
 
     if (changed) await job.save();
