@@ -80,16 +80,20 @@ function InboundSetupPage() {
 
   const forwardingEmail = `${user?.inboundPrefix}@applydesk.live`;
   const filterQuery = `(
-  from:(linkedin.com OR "jobs-noreply@linkedin.com" OR greenhouse.io OR lever.co OR workday.com OR icims.com OR taleo.net OR smartrecruiters.com OR myworkday.com)
+  from:(jobs-noreply@linkedin.com OR linkedin.com OR greenhouse.io OR lever.co OR myworkday.com OR workday.com OR icims.com OR taleo.net OR smartrecruiters.com)
   OR subject:(
-    "your application" OR "application received" OR "application submitted" OR
-    "application was sent to" OR "thanks for applying" OR "thank you for applying" OR
-    interview OR "phone screen" OR "schedule" OR "availability" OR "calendar invite" OR
-    offer OR "employment offer" OR "compensation" OR "salary" OR
+    "your application was sent to" OR
+    "your application to" OR
+    "application received" OR
+    "we received your application" OR
+    "thank you for applying" OR
+    "thanks for applying" OR
+    interview OR "phone screen" OR "schedule" OR availability OR "calendar invite" OR
+    offer OR "employment offer" OR compensation OR salary OR congratulations OR
     "not moving forward" OR "regret to inform" OR unfortunately OR rejected OR declined
   )
 )
--("unsubscribe" OR "manage your email preferences" OR "privacy policy" OR "terms of service" OR newsletter OR marketing OR promotion OR sale OR webinar OR "event reminder")`;
+-(newsletter OR marketing OR promotion OR sale OR webinar OR "event reminder")`;
 
   const copyToClipboard = (text, setter) => {
     navigator.clipboard.writeText(text);

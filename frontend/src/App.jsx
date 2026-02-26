@@ -37,10 +37,8 @@ function TopNav() {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchAllNotifications();
-    }
-  }, [isAuthenticated, fetchAllNotifications]);
+    if (isAuthenticated) fetchAllNotifications();
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -57,7 +55,7 @@ function TopNav() {
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Applications", path: "/jobs", icon: Briefcase },
-    { name: "Configure", path: "setup", icon: Settings },
+    { name: "Configure", path: "/setup", icon: Settings },
   ];
 
   return (
@@ -65,42 +63,42 @@ function TopNav() {
       style={{
         position: "sticky",
         top: 0,
-        zIndex: 40,
+        zIndex: 50,
         background: "rgba(247,245,242,0.92)",
-        backdropFilter: "blur(16px)",
+        backdropFilter: "blur(18px)",
         borderBottom: "1px solid #E8E4DE",
-        height: "58px",
+        height: "64px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 2.5rem",
+        padding: "0 3rem",
         fontFamily: "'DM Sans', sans-serif",
       }}
     >
+      {/* LOGO */}
       <Link
         to="/dashboard"
         style={{
-          textDecoration: "none",
           display: "flex",
           alignItems: "center",
-          gap: "8px",
+          gap: "10px",
+          textDecoration: "none",
         }}
       >
         <div
           style={{
-            width: "22px",
-            height: "22px",
-            borderRadius: "6px",
+            width: "24px",
+            height: "24px",
+            borderRadius: "7px",
             background: "#1C1917",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            flexShrink: 0,
           }}
         >
           <svg
-            width="12"
-            height="12"
+            width="13"
+            height="13"
             viewBox="0 0 24 24"
             fill="none"
             stroke="white"
@@ -113,9 +111,10 @@ function TopNav() {
         <span
           style={{
             fontFamily: "'Lora', serif",
-            fontSize: "1.05rem",
+            fontSize: "1.1rem",
             fontWeight: 600,
             color: "#1C1917",
+            letterSpacing: "-0.3px",
           }}
         >
           applyDesk
@@ -123,10 +122,12 @@ function TopNav() {
       </Link>
 
       {isAuthenticated && (
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <nav style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "28px" }}>
+          {/* NAV LINKS */}
+          <nav style={{ display: "flex", gap: "6px" }}>
             {navLinks.map(({ name, path, icon: Icon }) => {
               const active = location.pathname === path;
+
               return (
                 <Link
                   key={path}
@@ -135,79 +136,88 @@ function TopNav() {
                     display: "flex",
                     alignItems: "center",
                     gap: "6px",
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    fontSize: "0.8rem",
+                    padding: "7px 14px",
+                    borderRadius: "10px",
+                    fontSize: "0.82rem",
                     fontWeight: 500,
-                    color: active ? "#1C1917" : "#A8A29E",
+                    transition: "all 0.2s ease",
+                    color: active ? "#1C1917" : "#78716C",
                     background: active ? "#EFEDE9" : "transparent",
                     textDecoration: "none",
                   }}
+                  onMouseEnter={(e) => {
+                    if (!active) e.currentTarget.style.background = "#F7F5F2";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active)
+                      e.currentTarget.style.background = "transparent";
+                  }}
                 >
                   <Icon size={15} />
-                  <span>{name}</span>
+                  {name}
                 </Link>
               );
             })}
+          </nav>
 
-            {/* 🔔 Notification Dropdown */}
-            <div
-              style={{ position: "relative", padding: "6px 12px" }}
-              ref={dropdownRef}
-            >
-              <div
+          {/* RIGHT SECTION */}
+          <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+            {/* NOTIFICATIONS */}
+            <div ref={dropdownRef} style={{ position: "relative" }}>
+              <button
                 onClick={() => setOpen(!open)}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
                   position: "relative",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "6px",
+                  borderRadius: "8px",
                 }}
               >
-                <Bell size={15} />
+                <Bell size={17} />
 
                 {unreadCount > 0 && (
                   <span
                     style={{
                       position: "absolute",
-                      top: "-6px",
-                      right: "-8px",
-                      minWidth: "16px",
-                      height: "16px",
+                      top: "-4px",
+                      right: "-4px",
+                      minWidth: "18px",
+                      height: "18px",
                       borderRadius: "999px",
                       background: "#BE123C",
                       color: "white",
-                      fontSize: "0.6rem",
+                      fontSize: "0.65rem",
                       fontWeight: 600,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      padding: "0 4px",
                     }}
                   >
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
-              </div>
+              </button>
 
               {open && (
                 <div
                   style={{
                     position: "absolute",
-                    top: "36px",
+                    top: "42px",
                     right: 0,
-                    width: "320px",
+                    width: "340px",
                     background: "white",
-                    borderRadius: "12px",
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                    borderRadius: "14px",
+                    boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
                     border: "1px solid #E8E4DE",
                     overflow: "hidden",
-                    zIndex: 100,
+                    animation: "fadeIn 0.15s ease",
                   }}
                 >
                   <div
                     style={{
-                      padding: "12px",
+                      padding: "14px",
                       fontWeight: 600,
                       borderBottom: "1px solid #E8E4DE",
                       fontSize: "0.85rem",
@@ -216,26 +226,26 @@ function TopNav() {
                     Notifications
                   </div>
 
-                  <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                  <div style={{ maxHeight: "320px", overflowY: "auto" }}>
                     {notifications.length === 0 ? (
-                      <div style={{ padding: "16px", fontSize: "0.85rem" }}>
-                        No notifications
+                      <div style={{ padding: "18px", fontSize: "0.85rem" }}>
+                        You're all caught up ✨
                       </div>
                     ) : (
-                      notifications.slice(0, 5).map((n) => (
+                      notifications.slice(0, 6).map((n) => (
                         <div
                           key={n._id}
                           onClick={() => {
                             setOpen(false);
-                            // Navigate to the specific notification detail page
                             navigate(`/notifications/${n._id}`);
                           }}
                           style={{
-                            padding: "12px 14px",
+                            padding: "14px",
                             cursor: "pointer",
+                            fontSize: "0.8rem",
                             background: n.read ? "white" : "#F0F9FF",
                             borderBottom: "1px solid #F1F5F9",
-                            fontSize: "0.8rem",
+                            transition: "background 0.2s",
                           }}
                         >
                           {n.message}
@@ -246,7 +256,7 @@ function TopNav() {
 
                   <div
                     style={{
-                      padding: "10px",
+                      padding: "12px",
                       textAlign: "center",
                       background: "#FAFAF9",
                       borderTop: "1px solid #E8E4DE",
@@ -255,7 +265,6 @@ function TopNav() {
                     <button
                       onClick={() => {
                         setOpen(false);
-                        // Navigate to the general notifications list
                         navigate("/notifications");
                       }}
                       style={{
@@ -265,72 +274,77 @@ function TopNav() {
                         fontWeight: 600,
                         cursor: "pointer",
                         fontSize: "0.8rem",
-                        width: "100%",
                       }}
                     >
-                      View All
+                      View all notifications
                     </button>
                   </div>
                 </div>
               )}
             </div>
-          </nav>
 
-          <div
-            style={{ width: "1px", height: "20px", background: "#E8E4DE" }}
-          />
-
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ textAlign: "right" }}>
-              <div
-                style={{
-                  fontSize: "0.78rem",
-                  fontWeight: 500,
-                  color: "#1C1917",
-                }}
-              >
-                {user?.name}
-              </div>
-            </div>
-
-            {user?.picture ? (
-              <img
-                src={user.picture}
-                alt="Profile"
-                style={{
-                  width: "30px",
-                  height: "30px",
-                  borderRadius: "50%",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "30px",
-                  height: "30px",
-                  borderRadius: "50%",
-                  background: "#EFEDE9",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {user?.name?.charAt(0) ?? "U"}
-              </div>
-            )}
-
-            <button
-              onClick={logout}
+            {/* USER SECTION */}
+            <div
               style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
+                gap: "10px",
+                paddingLeft: "12px",
+                borderLeft: "1px solid #E8E4DE",
               }}
             >
-              <LogOut size={15} />
-            </button>
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 500,
+                    color: "#1C1917",
+                  }}
+                >
+                  {user?.name}
+                </div>
+              </div>
+
+              {user?.picture ? (
+                <img
+                  src={user.picture}
+                  alt="Profile"
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50%",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50%",
+                    background: "#EFEDE9",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {user?.name?.charAt(0) ?? "U"}
+                </div>
+              )}
+
+              <button
+                onClick={logout}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "6px",
+                }}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
           </div>
         </div>
       )}
