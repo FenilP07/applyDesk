@@ -46,6 +46,10 @@ const jobSchema = new Schema(
     sourceId: { type: String, default: null },
 
     sourceUrl: { type: String, default: null },
+
+    link: {
+      type: String,
+    },
   },
   { timestamps: true },
 );

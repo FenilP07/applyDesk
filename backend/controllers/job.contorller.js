@@ -59,26 +59,35 @@ const getJobs = async (req, res) => {
   }
 };
 
-const updateJob = async (req, res) => {
+export const updateJob = async (req, res) => {
   try {
     const { id } = req.params;
+    const updateData = req.body;
 
     const job = await Job.findOne({ _id: id, userId: req.user._id });
     if (!job) return res.status(404).json({ message: "Job not found" });
 
-    const { title, company, location, status, dateApplied } = req.body;
-
-    if (title !== undefined) job.title = title.trim();
-    if (company !== undefined) job.company = company.trim();
-    if (location !== undefined) job.location = location?.trim() || null;
-    if (status !== undefined) job.status = status;
-    if (dateApplied !== undefined) job.dateApplied = new Date(dateApplied);
+    const allowedUpdates = [
+      "title",
+      "company",
+      "location",
+      "status",
+      "dateApplied",
+      "link",
+    ];
+    allowedUpdates.forEach((field) => {
+      if (updateData[field] !== undefined) {
+        job[field] =
+          typeof updateData[field] === "string"
+            ? updateData[field].trim()
+            : updateData[field];
+      }
+    });
 
     await job.save();
-
     return res.status(200).json({ success: true, data: job });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to update job" });
+    return res.status(500).json({ message: "Update failed" });
   }
 };
 
@@ -151,7 +160,7 @@ const updateJobStatus = async (req, res) => {
     }
 
     job.status = status;
-    
+
     await job.save();
 
     return res.status(200).json({
@@ -165,6 +174,26 @@ const updateJobStatus = async (req, res) => {
   }
 };
 
+const addLink = async (req, res) => {
+  try {
+    const { link } = req.body;
+    const { id } = req.params;
+
+    const job = await Job.findOneAndUpdate(
+      {
+        _id: id,
+        userId: req.user._id,
+      },
+      { $set: { link: link } },
+      { new: true },
+    );
+    if (!job) return res.status(404).json({ message: "Job not found" });
+    return res.status(200).json({ success: true, data: job });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to add link" });
+  }
+};
+
 export {
   createJob,
   deleteJob,
@@ -172,4 +201,5 @@ export {
   updateJob,
   getJobSummary,
   updateJobStatus,
+  addLink,
 };
