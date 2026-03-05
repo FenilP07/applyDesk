@@ -98,6 +98,7 @@ const createJob = async (req, res) => {
       data: newJob,
     });
   } catch (error) {
+    console.error("createJob error:", error);
     return res.status(500).json({ message: "Failed to create job" });
   }
 };

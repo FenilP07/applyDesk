@@ -27,10 +27,7 @@ const jobSchema = new Schema(
           enum: ["applied", "interview", "rejected", "offer"],
           required: true,
         },
-        changedAt: {
-          type: Date,
-          default: Date.now,
-        },
+        changedAt: { type: Date, default: Date.now },
       },
     ],
 
@@ -43,30 +40,22 @@ const jobSchema = new Schema(
       index: true,
     },
 
-    sourceId: { type: String, default: null },
+    sourceId: { type: String, default: undefined },
 
     sourceUrl: { type: String, default: null },
+    link: { type: String, default: null },
 
-    link: {
-      type: String,
-    },
     archived: { type: Boolean, default: false, index: true },
-    starred: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
+    starred: { type: Boolean, default: false, index: true },
+
     priority: {
       type: String,
       enum: ["low", "medium", "high"],
       default: "medium",
       index: true,
     },
-    tags: {
-      type: [String],
-      default: [],
-      index: true,
-    },
+
+    tags: { type: [String], default: [], index: true },
   },
   { timestamps: true },
 );
@@ -76,17 +65,21 @@ jobSchema.index({ userId: 1, title: 1 });
 
 jobSchema.index(
   { userId: 1, source: 1, sourceId: 1 },
-  { unique: true, sparse: true },
+  {
+    unique: true,
+    partialFilterExpression: { sourceId: { $type: "string" } },
+  },
 );
 
 jobSchema.pre("save", function () {
-  if (this.isNew || this.isModified("status")) {
-    this.statusHistory.push({
-      status: this.status,
-      changedAt: new Date(),
-    });
+  if (this.isNew) {
+    this.statusHistory = [{ status: this.status, changedAt: new Date() }];
+    return;
+  }
+
+  if (this.isModified("status")) {
+    this.statusHistory.push({ status: this.status, changedAt: new Date() });
   }
 });
 
-const Job = mongoose.model("Job", jobSchema);
-export default Job;
+export default mongoose.model("Job", jobSchema);
