@@ -7,7 +7,8 @@ import {
   deleteJob,
   getJobSummary,
   updateJobStatus,
-  addLink,
+  getJobById,
+  getJobTimeline,
 } from "../controllers/job.contorller.js";
 
 const router = express.Router();
@@ -16,9 +17,12 @@ router.get("/analytics/summary", isLoggedIn, getJobSummary);
 
 router.post("/", isLoggedIn, createJob);
 router.get("/", isLoggedIn, getJobs);
-router.post("/add-link", isLoggedIn, addLink);
-router.put("/:id", isLoggedIn, updateJob);
-router.delete("/:id", isLoggedIn, deleteJob);
+router.get("/:id", isLoggedIn, getJobById);
+
+router.get("/:id/timeline", isLoggedIn, getJobTimeline);
 router.patch("/:id/status", isLoggedIn, updateJobStatus);
+router.patch("/:id", isLoggedIn, updateJob);
+
+router.delete("/:id", isLoggedIn, deleteJob);
 
 export default router;

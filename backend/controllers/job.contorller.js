@@ -1,13 +1,76 @@
 import Job from "../models/job.model.js";
 
+const VALID_STATUSES = new Set(["applied", "interview", "rejected", "offer"]);
+const VALID_PRIORITIES = new Set(["low", "medium", "high"]);
+
+function toDateOrNull(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function escapeRegex(str = "") {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeTags(tags) {
+  if (!tags) return [];
+  const arr = Array.isArray(tags) ? tags : String(tags).split(",");
+  return [...new Set(arr.map((t) => String(t).trim()).filter(Boolean))].slice(
+    0,
+    20,
+  );
+}
+
 const createJob = async (req, res) => {
   try {
-    const { title, company, location, status, dateApplied, source, sourceUrl } =
-      req.body;
+    const {
+      title,
+      company,
+      location,
+      status,
+      dateApplied,
+      source,
+      sourceUrl,
+      link,
+      tags,
+      starred,
+      priority,
+      archived,
+    } = req.body;
 
     if (!title || !company) {
-      return res.status(400).json({
-        message: "Title and Company are required",
+      return res
+        .status(400)
+        .json({ message: "Title and Company are required" });
+    }
+
+    const normalizedStatus = status || "applied";
+    if (!VALID_STATUSES.has(normalizedStatus)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const normalizedPriority = priority ?? "medium";
+    if (!VALID_PRIORITIES.has(normalizedPriority)) {
+      return res.status(400).json({ message: "Invalid priority" });
+    }
+
+    const applied = toDateOrNull(dateApplied) || new Date();
+
+    const dupWindowStart = new Date(
+      applied.getTime() - 14 * 24 * 60 * 60 * 1000,
+    );
+
+    const existing = await Job.findOne({
+      userId: req.user._id,
+      title: title.trim(),
+      company: company.trim(),
+      dateApplied: { $gte: dupWindowStart },
+    }).select("_id");
+
+    if (existing) {
+      return res.status(409).json({
+        message: "This job already exists (recent duplicate).",
       });
     }
 
@@ -16,10 +79,18 @@ const createJob = async (req, res) => {
       title: title.trim(),
       company: company.trim(),
       location: location?.trim() || null,
-      status: status || "applied",
-      dateApplied: dateApplied ? new Date(dateApplied) : new Date(),
+
+      status: normalizedStatus,
+
+      dateApplied: applied,
       source: source || "manual",
       sourceUrl: sourceUrl || null,
+      link: link || null,
+
+      tags: normalizeTags(tags),
+      starred: Boolean(starred),
+      priority: normalizedPriority,
+      archived: Boolean(archived),
     });
 
     return res.status(201).json({
@@ -33,27 +104,57 @@ const createJob = async (req, res) => {
 
 const getJobs = async (req, res) => {
   try {
-    const { status, company, q } = req.query;
+    const { status, company, q, archived, starred, tag, priority } = req.query;
+
     const filter = { userId: req.user._id };
+
+    // archived filter (default: show non-archived)
+    if (archived === "true") filter.archived = true;
+    else if (archived === "false" || archived === undefined)
+      filter.archived = false;
+
+    if (starred === "true") filter.starred = true;
+    if (priority && VALID_PRIORITIES.has(String(priority)))
+      filter.priority = priority;
 
     if (status && status !== "all") filter.status = status;
 
     if (company) {
-      filter.company = { $regex: company, $options: "i" };
+      filter.company = { $regex: escapeRegex(company), $options: "i" };
+    }
+
+    if (tag) {
+      filter.tags = String(tag).trim();
     }
 
     if (q) {
+      const safe = escapeRegex(q);
       filter.$or = [
-        { title: { $regex: q, $options: "i" } },
-        { company: { $regex: q, $options: "i" } },
+        { title: { $regex: safe, $options: "i" } },
+        { company: { $regex: safe, $options: "i" } },
       ];
     }
 
-    const jobs = await Job.find(filter).sort({
-      dateApplied: -1,
-      createdAt: -1,
+    const page = Math.max(1, parseInt(String(req.query.page || "1"), 10));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(String(req.query.limit || "50"), 10)),
+    );
+    const skip = (page - 1) * limit;
+
+    const [jobs, total] = await Promise.all([
+      Job.find(filter)
+        .sort({ starred: -1, dateApplied: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Job.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: jobs,
+      meta: { page, limit, total, hasMore: skip + jobs.length < total },
     });
-    return res.status(200).json({ success: true, data: jobs });
   } catch (error) {
     return res.status(500).json({ message: "Failed to fetch jobs" });
   }
@@ -71,18 +172,49 @@ const updateJob = async (req, res) => {
       "title",
       "company",
       "location",
-      "status",
       "dateApplied",
       "link",
+      "sourceUrl",
+      "starred",
+      "archived",
+      "priority",
+      "tags",
     ];
-    allowedUpdates.forEach((field) => {
-      if (updateData[field] !== undefined) {
-        job[field] =
-          typeof updateData[field] === "string"
-            ? updateData[field].trim()
-            : updateData[field];
+
+    for (const field of allowedUpdates) {
+      if (updateData[field] === undefined) continue;
+
+      if (field === "tags") {
+        job.tags = normalizeTags(updateData.tags);
+        continue;
       }
-    });
+
+      if (field === "priority") {
+        const p = String(updateData.priority || "medium");
+        if (!VALID_PRIORITIES.has(p)) {
+          return res.status(400).json({ message: "Invalid priority" });
+        }
+        job.priority = p;
+        continue;
+      }
+
+      if (field === "archived" || field === "starred") {
+        job[field] = Boolean(updateData[field]);
+        continue;
+      }
+
+      if (field === "dateApplied") {
+        const d = toDateOrNull(updateData.dateApplied);
+        if (!d) return res.status(400).json({ message: "Invalid dateApplied" });
+        job.dateApplied = d;
+        continue;
+      }
+
+      job[field] =
+        typeof updateData[field] === "string"
+          ? updateData[field].trim()
+          : updateData[field];
+    }
 
     await job.save();
     return res.status(200).json({ success: true, data: job });
@@ -117,12 +249,9 @@ const getJobSummary = async (req, res) => {
     const userId = req.user._id;
 
     const summary = await Job.aggregate([
-      { $match: { userId } },
+      { $match: { userId, archived: false } },
       {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-        },
+        $group: { _id: "$status", count: { $sum: 1 } },
       },
     ]);
 
@@ -150,6 +279,8 @@ const updateJobStatus = async (req, res) => {
         message: "Status is required",
       });
     }
+    if (!VALID_STATUSES.has(status))
+      return res.status(400).json({ message: "Invalid status" });
 
     const job = await Job.findOne({ _id: id, userId: req.user._id });
 
@@ -160,7 +291,6 @@ const updateJobStatus = async (req, res) => {
     }
 
     job.status = status;
-
     await job.save();
 
     return res.status(200).json({
@@ -173,24 +303,54 @@ const updateJobStatus = async (req, res) => {
     });
   }
 };
-
-const addLink = async (req, res) => {
+const getJobById = async (req, res) => {
   try {
-    const { link } = req.body;
     const { id } = req.params;
 
-    const job = await Job.findOneAndUpdate(
-      {
-        _id: id,
-        userId: req.user._id,
-      },
-      { $set: { link: link } },
-      { new: true },
-    );
+    const job = await Job.findOne({
+      _id: id,
+      userId: req.user._id,
+    });
+
     if (!job) return res.status(404).json({ message: "Job not found" });
-    return res.status(200).json({ success: true, data: job });
+    return res.status(200).json({
+      success: true,
+      data: job,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to add link" });
+    return res.status(500).json({
+      message: "Failed to fetch job",
+    });
+  }
+};
+
+const getJobTimeline = async (req, res) => {
+  try {
+    const job = await Job.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    const timeline = [
+      {
+        type: "created",
+        date: job.createdAt,
+        label: "Job added",
+      },
+      ...job.statusHistory.map((s) => ({
+        type: "status",
+        date: s.changedAt,
+        label: `Status changed to ${s.status}`,
+      })),
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return res.json({ success: true, data: timeline });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to fetch timeline" });
   }
 };
 
@@ -201,5 +361,6 @@ export {
   updateJob,
   getJobSummary,
   updateJobStatus,
-  addLink,
+  getJobById,
+  getJobTimeline,
 };

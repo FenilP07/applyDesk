@@ -55,7 +55,7 @@ function TopNav() {
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Applications", path: "/jobs", icon: Briefcase },
-    { name: "Configure", path: "/setup", icon: Settings },
+    // { name: "Configure", path: "/setup", icon: Settings },
   ];
 
   return (
@@ -364,10 +364,10 @@ export default function App() {
       <TopNav />
       <main>
         <Routes>
-          <Route
+          {/* <Route
             path="/setup"
             element={<InboundSetupPage></InboundSetupPage>}
-          />
+          /> */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route
             path="/login"
@@ -393,7 +393,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* Main notifications list */}
+         
           <Route
             path="/notifications"
             element={
@@ -402,7 +402,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          {/* Specific notification detail view */}
+         
           <Route
             path="/notifications/:id"
             element={

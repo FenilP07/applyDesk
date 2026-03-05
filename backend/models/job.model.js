@@ -50,6 +50,23 @@ const jobSchema = new Schema(
     link: {
       type: String,
     },
+    archived: { type: Boolean, default: false, index: true },
+    starred: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "medium",
+      index: true,
+    },
+    tags: {
+      type: [String],
+      default: [],
+      index: true,
+    },
   },
   { timestamps: true },
 );

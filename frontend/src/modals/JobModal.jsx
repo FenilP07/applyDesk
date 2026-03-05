@@ -17,13 +17,7 @@ function InputField({ label, ...props }) {
   );
 }
 
-export default function JobModal({
-  open,
-  onClose,
-  onCreate,
-  onUpdate,
-  job,
-}) {
+export default function JobModal({ open, onClose, onCreate, onUpdate, job }) {
   const isEdit = !!job;
 
   const [form, setForm] = useState({
@@ -31,6 +25,7 @@ export default function JobModal({
     company: "",
     location: "",
     status: "applied",
+    link: "",
     dateApplied: new Date().toISOString().slice(0, 10),
   });
 
@@ -43,6 +38,7 @@ export default function JobModal({
         company: job.company || "",
         location: job.location || "",
         status: job.status || "applied",
+        link: job.link || "",
         dateApplied: job.dateApplied?.slice(0, 10) || "",
       });
     } else {
@@ -51,6 +47,7 @@ export default function JobModal({
         company: "",
         location: "",
         status: "applied",
+        link: "",
         dateApplied: new Date().toISOString().slice(0, 10),
       });
     }
@@ -101,6 +98,11 @@ export default function JobModal({
             label="Location"
             value={form.location}
             onChange={handleChange("location")}
+          />
+          <InputField
+            label="Link"
+            value={form.link}
+            onChange={handleChange("link")}
           />
           <InputField
             label="Date Applied"
