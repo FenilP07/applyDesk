@@ -8,4 +8,6 @@ export const jobApi = {
   summary: () => apiClient.get("/api/jobs/analytics/summary"),
   statusUpdate: (id, payload) =>
     apiClient.patch(`/api/jobs/${id}/status`, payload),
+  getById: (id) => apiClient.get(`/api/jobs/${id}`),
+  timeline: (id) => apiClient.get(`/api/jobs/${id}/timeline`),
 };
