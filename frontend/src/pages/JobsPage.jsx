@@ -9,6 +9,7 @@ import {
   Star,
   ExternalLink,
   Link,
+  ArrowLeft,
   MapPin,
   ChevronDown,
   SlidersHorizontal,
@@ -24,6 +25,7 @@ import JobModal from "../modals/JobModal";
 import LinkModal from "../modals/LinkModal";
 import JobDetailPanel from "../modals/JobDetailPanel";
 import { useJobNotesStore } from "../store/jobNoteStore";
+import { useNavigate } from "react-router-dom";
 
 // ─── SHARED TOKENS ────────────────────────────────────────────────────────────
 
@@ -198,6 +200,7 @@ export default function JobsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [linkJob, setLinkJob] = useState(null);
+  const navigate = useNavigate();
 
   const w = useWindowWidth();
   const isMobile = w < 768;
@@ -258,24 +261,44 @@ export default function JobsPage() {
       <div className="px-6 py-10 lg:px-10">
         <div className="mx-auto max-w-5xl">
           {/* Page header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-            <div>
-              <h1 className="text-3xl text-stone-900 font-semibold tracking-tight font-['Lora']">
-                Applications
-              </h1>
-              <p className="text-sm text-[#A8A29E] mt-1">
-                {loading
-                  ? "Loading…"
-                  : `${total} opportunit${total === 1 ? "y" : "ies"} tracked`}
-              </p>
-            </div>
-            <button
-              onClick={() => setModal({ open: true, job: null })}
-              className="flex items-center gap-2 bg-[#1C1917] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-black transition-all active:scale-95 shadow-sm"
-            >
-              <Plus size={15} /> Add Application
-            </button>
-          </div>
+          <div className="flex items-end justify-between mb-8">
+  
+  {/* Left side */}
+  <div>
+    <h1 className="text-3xl text-stone-900 font-semibold tracking-tight font-['Lora']">
+      Applications
+    </h1>
+
+    <p className="text-sm text-[#A8A29E] mt-1">
+      {loading
+        ? "Loading…"
+        : `${total} opportunit${total === 1 ? "y" : "ies"} tracked`}
+    </p>
+  </div>
+
+  {/* Right side actions */}
+  <div className="flex items-center gap-3">
+
+    {/* Secondary */}
+    <button
+      onClick={() => navigate("/dashboard")}
+      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8E4DE] bg-white text-sm font-medium text-stone-600 hover:bg-stone-50 transition-all"
+    >
+      <ArrowLeft size={14} />
+      Dashboard
+    </button>
+
+    {/* Primary */}
+    <button
+      onClick={() => setModal({ open: true, job: null })}
+      className="flex items-center gap-2 bg-[#1C1917] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-black transition-all active:scale-95 shadow-sm"
+    >
+      <Plus size={15} />
+      Add Application
+    </button>
+
+  </div>
+</div>
 
           {/* Toolbar */}
           <div className="flex gap-3 mb-4 flex-wrap">
