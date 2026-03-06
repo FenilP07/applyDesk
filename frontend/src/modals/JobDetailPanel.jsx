@@ -363,7 +363,7 @@ export default function JobDetailPanel({ job, onClose, onEdit }) {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ type: "spring", stiffness: 310, damping: 32 }}
-      className="fixed right-0 top-0 h-full w-full max-w-[400px] bg-white border-l border-[#E8E4DE] shadow-2xl z-40 flex flex-col"
+     className="fixed right-0 top-[60px] h-[calc(100vh-60px)] w-full max-w-[400px] bg-white border-l border-[#E8E4DE] shadow-2xl z-40 flex flex-col"
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
       {/* Header */}
