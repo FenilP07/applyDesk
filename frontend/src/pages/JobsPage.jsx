@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import useJobStore from "../store/jobStore";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -7,8 +8,6 @@ import {
   Trash2,
   Pencil,
   Star,
-  ExternalLink,
-  Link,
   ArrowLeft,
   MapPin,
   ChevronDown,
@@ -21,13 +20,11 @@ import {
   Link2,
   SquareArrowOutUpRight,
 } from "lucide-react";
+import { jobApi } from "../api/jobApi";
 import JobModal from "../modals/JobModal";
 import LinkModal from "../modals/LinkModal";
 import JobDetailPanel from "../modals/JobDetailPanel";
 import { useJobNotesStore } from "../store/jobNoteStore";
-import { useNavigate } from "react-router-dom";
-
-// ─── SHARED TOKENS ────────────────────────────────────────────────────────────
 
 const PILL_STYLES = {
   applied: "bg-[#EFF6FF] text-[#1D4ED8] border-[#DBEAFE]",
@@ -43,10 +40,7 @@ const PRIORITY_DOT = {
 };
 
 const STATUSES = ["applied", "interview", "offer", "rejected"];
-
 const MAX_TAGS_IN_TABLE = 3;
-
-// ─── INLINE STATUS DROPDOWN ───────────────────────────────────────────────────
 
 function StatusDrop({ job }) {
   const { statusUpdate } = useJobStore();
@@ -74,6 +68,7 @@ function StatusDrop({ job }) {
         {job.status}
         <ChevronDown size={9} />
       </button>
+
       <AnimatePresence>
         {open && (
           <>
@@ -128,10 +123,11 @@ function useWindowWidth() {
   return w;
 }
 
-function TagPills({ tags = {} }) {
+function TagPills({ tags = [] }) {
   const safe = Array.isArray(tags) ? tags.filter(Boolean) : [];
   const shown = safe.slice(0, MAX_TAGS_IN_TABLE);
   const extra = safe.length - shown.length;
+
   if (!shown.length) return null;
 
   return (
@@ -139,8 +135,8 @@ function TagPills({ tags = {} }) {
       {shown.map((t) => (
         <span
           key={t}
-          className="px-2 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-600 text-[0.6rem] font-semibold whitespace-nowrap"
           title={t}
+          className="px-2 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-600 text-[0.6rem] font-semibold whitespace-nowrap"
         >
           {t}
         </span>
@@ -172,7 +168,6 @@ function formatAppliedDate(date) {
     day: "numeric",
   });
 }
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 
 export default function JobsPage() {
   const {
@@ -193,15 +188,15 @@ export default function JobsPage() {
     setLimit,
   } = useJobStore();
 
-  const { byJobId, fetchNotes } = useJobNotesStore();
+  const { byJobId } = useJobNotesStore();
 
   const [modal, setModal] = useState({ open: false, job: null });
   const [detailJob, setDetailJob] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [linkJob, setLinkJob] = useState(null);
-  const navigate = useNavigate();
 
+  const navigate = useNavigate();
   const w = useWindowWidth();
   const isMobile = w < 768;
   const desiredLimit = isMobile ? 6 : 9;
@@ -222,6 +217,7 @@ export default function JobsPage() {
     filters.archived,
     page,
     limit,
+    fetchJobs,
   ]);
 
   useEffect(() => {
@@ -230,8 +226,13 @@ export default function JobsPage() {
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === "Escape") setDetailJob(null);
+      if (e.key === "Escape") {
+        setDetailJob(null);
+        setConfirmDelete(null);
+        setLinkJob(null);
+      }
     };
+
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
@@ -247,6 +248,23 @@ export default function JobsPage() {
     setTimeout(() => setModal({ open: true, job }), 80);
   };
 
+  const handleSaveLink = async (cleaned) => {
+    if (!linkJob?.id) {
+      return { success: false, message: "No job selected." };
+    }
+
+    try {
+      await jobApi.update(linkJob.id, { link: cleaned });
+      await fetchJobs({ mode: "replace" });
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        message: err?.response?.data?.message || "Failed to save link.",
+      };
+    }
+  };
+
   const activeFilterCount = [
     filters.priority !== "all",
     filters.starred,
@@ -256,53 +274,44 @@ export default function JobsPage() {
   return (
     <div
       className="min-h-screen bg-[#F7F5F2] font-['DM_Sans'] transition-all duration-300"
-      style={{ paddingRight: detailJob ? 420 : 0 }}
+      style={{ paddingRight: !isMobile && detailJob ? 420 : 0 }}
     >
-      <div className="px-6 py-10 lg:px-10">
+      <div className="px-4 py-8 md:px-6 md:py-10 lg:px-10">
         <div className="mx-auto max-w-5xl">
-          {/* Page header */}
-          <div className="flex items-end justify-between mb-8">
-  
-  {/* Left side */}
-  <div>
-    <h1 className="text-3xl text-stone-900 font-semibold tracking-tight font-['Lora']">
-      Applications
-    </h1>
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl text-stone-900 font-semibold tracking-tight font-['Lora']">
+                Applications
+              </h1>
+              <p className="text-sm text-[#A8A29E] mt-1">
+                {loading
+                  ? "Loading…"
+                  : `${total} opportunit${total === 1 ? "y" : "ies"} tracked`}
+              </p>
+            </div>
 
-    <p className="text-sm text-[#A8A29E] mt-1">
-      {loading
-        ? "Loading…"
-        : `${total} opportunit${total === 1 ? "y" : "ies"} tracked`}
-    </p>
-  </div>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 md:ml-auto w-full md:w-auto">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8E4DE] bg-white text-sm font-medium text-stone-600 hover:bg-stone-50 transition-all w-full sm:w-auto"
+              >
+                <ArrowLeft size={14} />
+                Dashboard
+              </button>
 
-  {/* Right side actions */}
-  <div className="flex items-center gap-3">
-
-    {/* Secondary */}
-    <button
-      onClick={() => navigate("/dashboard")}
-      className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8E4DE] bg-white text-sm font-medium text-stone-600 hover:bg-stone-50 transition-all"
-    >
-      <ArrowLeft size={14} />
-      Dashboard
-    </button>
-
-    {/* Primary */}
-    <button
-      onClick={() => setModal({ open: true, job: null })}
-      className="flex items-center gap-2 bg-[#1C1917] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-black transition-all active:scale-95 shadow-sm"
-    >
-      <Plus size={15} />
-      Add Application
-    </button>
-
-  </div>
-</div>
+              <button
+                onClick={() => setModal({ open: true, job: null })}
+                className="flex items-center justify-center gap-2 bg-[#1C1917] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-black transition-all active:scale-95 shadow-sm w-full sm:w-auto"
+              >
+                <Plus size={15} />
+                Add Application
+              </button>
+            </div>
+          </div>
 
           {/* Toolbar */}
-          <div className="flex gap-3 mb-4 flex-wrap">
-            {/* Search */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="relative flex-1 min-w-[200px] group">
               <Search
                 size={13}
@@ -324,37 +333,37 @@ export default function JobsPage() {
               )}
             </div>
 
-            {/* Status */}
-            <select
-              value={filters.status}
-              onChange={(e) => setFilter("status", e.target.value)}
-              className="px-3.5 py-2.5 rounded-xl bg-white border border-[#E8E4DE] text-sm outline-none cursor-pointer hover:bg-stone-50 transition-colors"
-            >
-              <option value="all">All Statuses</option>
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-3 sm:w-auto">
+              <select
+                value={filters.status}
+                onChange={(e) => setFilter("status", e.target.value)}
+                className="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl bg-white border border-[#E8E4DE] text-sm outline-none cursor-pointer hover:bg-stone-50 transition-colors"
+              >
+                <option value="all">All Statuses</option>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
+              </select>
 
-            {/* More filters */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                showFilters || activeFilterCount > 0
-                  ? "bg-stone-900 text-white border-stone-900"
-                  : "bg-white border-[#E8E4DE] text-stone-500 hover:bg-stone-50"
-              }`}
-            >
-              <SlidersHorizontal size={13} />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="bg-white/25 text-white text-[0.58rem] font-bold rounded-full px-1.5 py-0.5">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                  showFilters || activeFilterCount > 0
+                    ? "bg-stone-900 text-white border-stone-900"
+                    : "bg-white border-[#E8E4DE] text-stone-500 hover:bg-stone-50"
+                }`}
+              >
+                <SlidersHorizontal size={13} />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="bg-white/25 text-white text-[0.58rem] font-bold rounded-full px-1.5 py-0.5">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Extended filters */}
@@ -442,215 +451,214 @@ export default function JobsPage() {
 
           {/* Table */}
           <div className="bg-white rounded-2xl border border-[#E8E4DE] shadow-sm overflow-hidden">
-            {/* Column headers */}
-            <div className="grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-3.5 bg-[#FBF9F7] border-b border-[#E8E4DE] hidden md:grid">
-              {[
-                "Opportunity",
-                "Location",
-                "Priority",
-                "Status",
-                "Applied",
-                "",
-              ].map((h) => (
-                <span
-                  key={h}
-                  className="text-[0.58rem] font-bold uppercase tracking-widest text-[#A8A29E]"
-                >
-                  {h}
-                </span>
-              ))}
-            </div>
-
-            {/* Rows */}
-            <div className="divide-y divide-[#F5F3F0]">
-              <AnimatePresence mode="popLayout">
-                {loading && !jobs.length ? (
-                  <div className="py-20 text-center text-sm text-stone-300 animate-pulse">
-                    Loading…
-                  </div>
-                ) : !jobs.length ? (
-                  <div className="py-16 text-center">
-                    <p className="text-stone-300 text-sm mb-3">
-                      No applications found
-                    </p>
-                    <button
-                      onClick={() => setModal({ open: true, job: null })}
-                      className="text-xs font-medium text-stone-500 hover:text-stone-900 underline underline-offset-2"
+            <div className="overflow-x-auto">
+              <div className="min-w-[900px]">
+                {/* Column headers */}
+                <div className="grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-3.5 bg-[#FBF9F7] border-b border-[#E8E4DE]">
+                  {[
+                    "Opportunity",
+                    "Location",
+                    "Priority",
+                    "Status",
+                    "Applied",
+                    "",
+                  ].map((h) => (
+                    <span
+                      key={h}
+                      className="text-[0.58rem] font-bold uppercase tracking-widest text-[#A8A29E]"
                     >
-                      Add your first application →
-                    </button>
-                  </div>
-                ) : (
-                  jobs.map((job) => {
-                    const isSelected = detailJob?.id === job.id;
-                    return (
-                      <motion.div
-                        key={job.id}
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, scale: 0.99 }}
-                        onClick={() => {
-                          setDetailJob((p) => (p?.id === job.id ? null : job));
-                          // fetchNotes(job.id, { page: 1, limit: 50 });
-                        }}
-                        className={`grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-3.5 items-center cursor-pointer transition-colors group ${
-                          isSelected
-                            ? "bg-stone-50 border-l-2 border-l-stone-800 -ml-px"
-                            : "hover:bg-[#FAFAF9] border-l-2 border-l-transparent"
-                        }`}
-                      >
-                        {/* Opportunity */}
-                        <div className="flex items-center gap-2.5 min-w-0 pr-3">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleStarred(job.id);
-                            }}
-                            className={`flex-shrink-0 transition-colors ${
-                              job.starred
-                                ? "text-amber-400"
-                                : "text-stone-200 hover:text-amber-300"
+                      {h}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Rows */}
+                <div className="divide-y divide-[#F5F3F0]">
+                  <AnimatePresence mode="popLayout">
+                    {loading && !jobs.length ? (
+                      <div className="py-20 text-center text-sm text-stone-300 animate-pulse">
+                        Loading…
+                      </div>
+                    ) : !jobs.length ? (
+                      <div className="py-16 text-center">
+                        <p className="text-stone-300 text-sm mb-3">
+                          No applications found
+                        </p>
+                        <button
+                          onClick={() => setModal({ open: true, job: null })}
+                          className="text-xs font-medium text-stone-500 hover:text-stone-900 underline underline-offset-2"
+                        >
+                          Add your first application →
+                        </button>
+                      </div>
+                    ) : (
+                      jobs.map((job) => {
+                        const isSelected = detailJob?.id === job.id;
+                        const noteCount = byJobId?.[job.id]?.items?.length || 0;
+                        const hasNotes = noteCount > 0;
+
+                        const ICON_BTN =
+                          "w-7 h-7 flex items-center justify-center rounded-lg text-stone-300 hover:text-stone-800 hover:bg-stone-100 transition-all";
+
+                        return (
+                          <motion.div
+                            key={job.id}
+                            layout
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0, scale: 0.99 }}
+                            onClick={() =>
+                              setDetailJob((p) =>
+                                p?.id === job.id ? null : job,
+                              )
+                            }
+                            className={`grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-3.5 items-center cursor-pointer transition-colors group ${
+                              isSelected
+                                ? "bg-stone-50 border-l-2 border-l-stone-800 -ml-px"
+                                : "hover:bg-[#FAFAF9] border-l-2 border-l-transparent"
                             }`}
                           >
-                            <Star
-                              size={13}
-                              fill={job.starred ? "currentColor" : "none"}
-                            />
-                          </button>
+                            {/* Opportunity */}
+                            <div className="flex items-center gap-2.5 min-w-0 pr-3">
+                              {/* <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleStarred(job.id);
+                                }}
+                                className={`flex-shrink-0 transition-colors ${
+                                  job.starred
+                                    ? "text-amber-400"
+                                    : "text-stone-200 hover:text-amber-300"
+                                }`}
+                              >
+                                <Star
+                                  size={13}
+                                  fill={job.starred ? "currentColor" : "none"}
+                                />
+                              </button> */}
 
-                          <div className="min-w-0 flex-1">
-                            {/* Title */}
-                            <p className="text-sm font-semibold text-stone-900 truncate">
-                              {job.title}
-                            </p>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-stone-900 truncate">
+                                  {job.title}
+                                </p>
 
-                            {/* Company + Tags */}
-                            <div className="flex items-center gap-2 min-w-0 mt-[2px]">
-                              <p className="text-[0.68rem] text-stone-400 truncate">
-                                {job.company}
-                              </p>
-
-                              <TagPills tags={job.tags} />
+                                <div className="flex items-center gap-2 min-w-0 mt-[2px]">
+                                  <p className="text-[0.68rem] text-stone-400 truncate">
+                                    {job.company}
+                                  </p>
+                                  <TagPills tags={job.tags} />
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
 
-                        {/* Location */}
-                        <div className="flex items-center gap-1 text-xs text-stone-400 truncate">
-                          <MapPin
-                            size={11}
-                            className="text-stone-300 flex-shrink-0"
-                          />
-                          <span className="truncate">
-                            {job.location || "—"}
-                          </span>
-                        </div>
-
-                        {/* Priority */}
-                        <div className="flex items-center gap-1.5">
-                          {job.priority && (
-                            <>
-                              <div
-                                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[job.priority]}`}
+                            {/* Location */}
+                            <div className="flex items-center gap-1 text-xs text-stone-400 truncate">
+                              <MapPin
+                                size={11}
+                                className="text-stone-300 flex-shrink-0"
                               />
-                              <span className="text-xs text-stone-500 capitalize">
-                                {job.priority}
+                              <span className="truncate">
+                                {job.location || "—"}
                               </span>
-                            </>
-                          )}
-                        </div>
+                            </div>
 
-                        {/* Status*/}
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <StatusDrop job={job} />
-                        </div>
+                            {/* Priority */}
+                            <div className="flex items-center gap-1.5">
+                              {job.priority && (
+                                <>
+                                  <div
+                                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[job.priority]}`}
+                                  />
+                                  <span className="text-xs text-stone-500 capitalize">
+                                    {job.priority}
+                                  </span>
+                                </>
+                              )}
+                            </div>
 
-                        {/* Date */}
-                        <div className="text-xs text-stone-400">
-                          {formatAppliedDate(job.dateApplied)}
-                        </div>
+                            {/* Status */}
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <StatusDrop job={job} />
+                            </div>
 
-                        {/* Actions */}
-                        <div
-                          className="flex justify-end items-center gap-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {(() => {
-                            const noteCount =
-                              byJobId?.[job.id]?.items?.length || 0;
-                            const hasNotes = noteCount > 0;
+                            {/* Date */}
+                            <div className="text-xs text-stone-400">
+                              {formatAppliedDate(job.dateApplied)}
+                            </div>
 
-                            const ICON_BTN =
-                              "w-7 h-7 flex items-center justify-center rounded-lg " +
-                              "text-stone-300 hover:text-stone-800 hover:bg-stone-100 transition-all";
-
-                            return (
-                              <>
-                                {/* NOTES */}
-                                <button
-                                  onClick={() => setDetailJob(job)}
-                                  title={hasNotes ? "View notes" : "Add note"}
-                                  className={ICON_BTN}
-                                >
-                                  {hasNotes ? (
-                                    <MessageSquare size={14} />
-                                  ) : (
-                                    <NotebookPen size={14} />
-                                  )}
-                                </button>
-
-                                {/* LINK */}
-                                {job.link ? (
-                                  <a
-                                    href={job.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    title="Open link"
-                                    className={ICON_BTN}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <SquareArrowOutUpRight size={14} />
-                                  </a>
+                            {/* Actions */}
+                            <div
+                              className="flex justify-end items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => setDetailJob(job)}
+                                title={hasNotes ? "View notes" : "Add note"}
+                                className={ICON_BTN}
+                              >
+                                {hasNotes ? (
+                                  <MessageSquare size={14} />
                                 ) : (
-                                  <button
-                                    onClick={() => setLinkJob(job)}
-                                    title="Add link"
-                                    className={ICON_BTN}
-                                  >
-                                    <Link2 size={14} />
-                                  </button>
+                                  <NotebookPen size={14} />
                                 )}
+                              </button>
 
-                                {/* EDIT */}
-                                <button
-                                  onClick={() => openEdit(job)}
-                                  title="Edit"
-                                  className={ICON_BTN}
-                                >
-                                  <Pencil size={14} />
-                                </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation(); 
 
-                                {/* DELETE */}
-                                <button
-                                  onClick={() => setConfirmDelete(job.id)}
-                                  title="Delete"
-                                  className={
-                                    ICON_BTN +
-                                    " hover:bg-rose-50 hover:text-rose-500"
+                                  if (job.link) {
+                                   
+                                    const url = job.link.startsWith("http")
+                                      ? job.link
+                                      : `https://${job.link}`;
+                                    window.open(
+                                      url,
+                                      "_blank",
+                                      "noopener,noreferrer",
+                                    );
+                                  } else {
+                                    
+                                    setLinkJob(job);
                                   }
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </motion.div>
-                    );
-                  })
-                )}
-              </AnimatePresence>
+                                }}
+                                title={
+                                  job.link
+                                    ? "Open Application Link"
+                                    : "Add Link"
+                                }
+                                className={ICON_BTN}
+                              >
+                                {job.link ? (
+                                  <SquareArrowOutUpRight size={14} />
+                                ) : (
+                                  <Link2 size={14} />
+                                )}
+                              </button>
+
+                              <button
+                                onClick={() => openEdit(job)}
+                                title="Edit"
+                                className={ICON_BTN}
+                              >
+                                <Pencil size={14} />
+                              </button>
+
+                              <button
+                                onClick={() => setConfirmDelete(job.id)}
+                                title="Delete"
+                                className={`${ICON_BTN} hover:bg-rose-50 hover:text-rose-500`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -721,11 +729,13 @@ export default function JobsPage() {
         job={modal.job}
         onClose={() => setModal({ open: false, job: null })}
       />
+
+      {/* Link modal */}
       <LinkModal
         open={!!linkJob}
         initialValue={linkJob?.link || ""}
         onClose={() => setLinkJob(null)}
-        onSave={(cleaned) => jobApi.update(linkJob.id, { link: cleaned })}
+        onSave={handleSaveLink}
       />
 
       {/* Delete confirmation */}
