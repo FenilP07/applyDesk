@@ -1,8 +1,20 @@
 import { useEffect, useState } from "react";
 import {
-  X, Pin, Trash2, Pencil, Check, Plus, ChevronDown,
-  Star, Archive, ExternalLink, Bell, CheckCircle2,
-  StickyNote, History, Clock,
+  X,
+  Pin,
+  Trash2,
+  Pencil,
+  Check,
+  Plus,
+  ChevronDown,
+  Star,
+  Archive,
+  ExternalLink,
+  Bell,
+  CheckCircle2,
+  StickyNote,
+  History,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useJobNotesStore } from "../store/jobNoteStore";
@@ -12,24 +24,24 @@ import { jobApi } from "../api/jobApi";
 const STATUSES = ["applied", "interview", "offer", "rejected"];
 
 const PILL_STYLES = {
-  applied:   "bg-[#EFF6FF] text-[#1D4ED8] border-[#DBEAFE]",
+  applied: "bg-[#EFF6FF] text-[#1D4ED8] border-[#DBEAFE]",
   interview: "bg-[#FEF3C7] text-[#B45309] border-[#FDE68A]",
-  offer:     "bg-[#EAF4EF] text-[#2D6A4F] border-[#BBF7D0]",
-  rejected:  "bg-[#FFF1F2] text-[#BE123C] border-[#FECDD3]",
+  offer: "bg-[#EAF4EF] text-[#2D6A4F] border-[#BBF7D0]",
+  rejected: "bg-[#FFF1F2] text-[#BE123C] border-[#FECDD3]",
 };
 
 const TIMELINE_DOT = {
-  applied:   "bg-blue-400",
+  applied: "bg-blue-400",
   interview: "bg-amber-400",
-  offer:     "bg-emerald-400",
-  rejected:  "bg-rose-400",
-  created:   "bg-stone-300",
+  offer: "bg-emerald-400",
+  rejected: "bg-rose-400",
+  created: "bg-stone-300",
 };
 
 const PRIORITY_STYLES = {
-  low:    "text-stone-400",
+  low: "text-stone-400",
   medium: "text-amber-500",
-  high:   "text-rose-500",
+  high: "text-rose-500",
 };
 
 // ─── TAB BUTTON ───────────────────────────────────────────────────────────────
@@ -38,7 +50,7 @@ function TabBtn({ active, onClick, children, count }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-4 py-3 text-[0.62rem] font-bold uppercase tracking-widest transition-all border-b-2 ${
+      className={`flex items-center gap-1.5 px-4 py-3 text-[0.75rem] font-bold uppercase tracking-widest transition-all border-b-2 ${
         active
           ? "border-stone-900 text-stone-900"
           : "border-transparent text-[#A8A29E] hover:text-stone-600"
@@ -46,7 +58,9 @@ function TabBtn({ active, onClick, children, count }) {
     >
       {children}
       {count > 0 && (
-        <span className={`rounded-full px-1.5 py-0 text-[0.55rem] font-bold ${active ? "bg-stone-900 text-white" : "bg-stone-200 text-stone-500"}`}>
+        <span
+          className={`rounded-full px-1.5 py-0 text-[0.55rem] font-bold ${active ? "bg-stone-900 text-white" : "bg-stone-200 text-stone-500"}`}
+        >
           {count}
         </span>
       )}
@@ -57,18 +71,19 @@ function TabBtn({ active, onClick, children, count }) {
 // ─── NOTES TAB ────────────────────────────────────────────────────────────────
 
 function NotesTab({ job }) {
-  const { byJobId, fetchNotes, addNote, updateNote, deleteNote } = useJobNotesStore();
-  const bucket   = byJobId[job.id];
-  const notes    = bucket?.items || [];
-  const loading  = bucket?.loading;
+  const { byJobId, fetchNotes, addNote, updateNote, deleteNote } =
+    useJobNotesStore();
+  const bucket = byJobId[job.id];
+  const notes = bucket?.items || [];
+  const loading = bucket?.loading;
 
-  const [text,       setText]       = useState("");
-  const [pinned,     setPinned]     = useState(false);
-  const [remindAt,   setRemindAt]   = useState("");
+  const [text, setText] = useState("");
+  const [pinned, setPinned] = useState(false);
+  const [remindAt, setRemindAt] = useState("");
   const [showRemind, setShowRemind] = useState(false);
-  const [adding,     setAdding]     = useState(false);
-  const [editingId,  setEditingId]  = useState(null);
-  const [editText,   setEditText]   = useState("");
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState("");
 
   useEffect(() => {
     fetchNotes(job.id, { page: 1, limit: 50 });
@@ -77,8 +92,15 @@ function NotesTab({ job }) {
   const handleAdd = async () => {
     if (!text.trim()) return;
     setAdding(true);
-    await addNote(job.id, { text: text.trim(), pinned, remindAt: remindAt || null });
-    setText(""); setPinned(false); setRemindAt(""); setShowRemind(false);
+    await addNote(job.id, {
+      text: text.trim(),
+      pinned,
+      remindAt: remindAt || null,
+    });
+    setText("");
+    setPinned(false);
+    setRemindAt("");
+    setShowRemind(false);
     setAdding(false);
   };
 
@@ -88,7 +110,8 @@ function NotesTab({ job }) {
     setEditingId(null);
   };
 
-  const togglePin  = (note) => updateNote(job.id, note.id, { pinned: !note.pinned });
+  const togglePin = (note) =>
+    updateNote(job.id, note.id, { pinned: !note.pinned });
 
   const markDone = async (note) => {
     const { jobNoteApi } = await import("../api/jobNoteApi");
@@ -105,7 +128,9 @@ function NotesTab({ job }) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Add a note… (⌘↵ to save)"
           rows={3}
-          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAdd(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAdd();
+          }}
           className="w-full rounded-xl bg-[#F7F5F2] border border-[#E8E4DE] px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-stone-200 resize-none placeholder:text-stone-300 transition-all"
         />
         <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -113,21 +138,25 @@ function NotesTab({ job }) {
           <button
             onClick={() => setPinned(!pinned)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[0.65rem] font-semibold transition-all ${
-              pinned ? "bg-amber-50 border-amber-200 text-amber-600" : "bg-white border-[#E8E4DE] text-stone-400 hover:border-stone-300"
+              pinned
+                ? "bg-amber-50 border-amber-200 text-amber-600"
+                : "bg-white border-[#E8E4DE] text-stone-400 hover:border-stone-300"
             }`}
           >
             <Pin size={10} fill={pinned ? "currentColor" : "none"} /> Pin
           </button>
 
           {/* Remind */}
-          <button
+          {/* <button
             onClick={() => setShowRemind(!showRemind)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[0.65rem] font-semibold transition-all ${
-              showRemind || remindAt ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-white border-[#E8E4DE] text-stone-400 hover:border-stone-300"
+              showRemind || remindAt
+                ? "bg-blue-50 border-blue-200 text-blue-600"
+                : "bg-white border-[#E8E4DE] text-stone-400 hover:border-stone-300"
             }`}
           >
             <Bell size={10} /> Remind
-          </button>
+          </button> */}
 
           {showRemind && (
             <input
@@ -143,10 +172,11 @@ function NotesTab({ job }) {
             disabled={!text.trim() || adding}
             className="ml-auto flex items-center gap-1.5 bg-[#1C1917] text-white text-xs px-3 py-1.5 rounded-lg font-medium disabled:opacity-40 hover:bg-black transition-all active:scale-95"
           >
-            {adding
-              ? <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              : <Plus size={11} />
-            }
+            {adding ? (
+              <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            ) : (
+              <Plus size={11} />
+            )}
             Add
           </button>
         </div>
@@ -155,7 +185,9 @@ function NotesTab({ job }) {
       {/* Note list */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {loading && !notes.length && (
-          <p className="text-center text-stone-300 text-sm py-8 animate-pulse">Loading…</p>
+          <p className="text-center text-stone-300 text-sm py-8 animate-pulse">
+            Loading…
+          </p>
         )}
         {!loading && !notes.length && (
           <div className="text-center py-10 text-stone-300">
@@ -175,8 +207,8 @@ function NotesTab({ job }) {
                 note.pinned
                   ? "bg-amber-50/60 border-amber-200"
                   : note.doneAt
-                  ? "bg-[#FAFAF9] border-[#EFEDE9] opacity-60"
-                  : "bg-white border-[#E8E4DE]"
+                    ? "bg-[#FAFAF9] border-[#EFEDE9] opacity-60"
+                    : "bg-white border-[#E8E4DE]"
               }`}
             >
               {editingId === note.id ? (
@@ -184,40 +216,96 @@ function NotesTab({ job }) {
                   <textarea
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    autoFocus rows={2}
+                    autoFocus
+                    rows={2}
                     className="w-full text-sm bg-[#F7F5F2] border border-[#E8E4DE] rounded-lg px-2.5 py-2 outline-none resize-none"
                   />
                   <div className="flex gap-2">
-                    <button onClick={() => saveEdit(note)} className="px-3 py-1 rounded-lg bg-stone-900 text-white text-xs font-semibold">Save</button>
-                    <button onClick={() => setEditingId(null)} className="px-2.5 py-1 rounded-lg text-stone-400 text-xs border border-[#E8E4DE] hover:bg-stone-50">Cancel</button>
+                    <button
+                      onClick={() => saveEdit(note)}
+                      className="px-3 py-1 rounded-lg bg-stone-900 text-white text-xs font-semibold"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="px-2.5 py-1 rounded-lg text-stone-400 text-xs border border-[#E8E4DE] hover:bg-stone-50"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <p className={`text-sm leading-relaxed ${note.doneAt ? "line-through text-stone-400" : "text-stone-700"}`}>
+                  <p
+                    className={`text-sm leading-relaxed ${note.doneAt ? "line-through text-stone-400" : "text-stone-700"}`}
+                  >
                     {note.text}
                   </p>
                   <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-2 text-[0.6rem] text-stone-400">
-                      {note.pinned && <span className="flex items-center gap-0.5 text-amber-500"><Pin size={8} fill="currentColor" /> pinned</span>}
+                    <div className="flex items-center gap-2 text-[0.75rem] text-stone-400">
+                      {note.pinned && (
+                        <span className="flex items-center gap-0.5 text-amber-500">
+                          <Pin size={8} fill="currentColor" /> pinned
+                        </span>
+                      )}
                       {note.remindAt && (
                         <span className="flex items-center gap-0.5 text-blue-400">
                           <Bell size={8} />
-                          {new Date(note.remindAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          {new Date(note.remindAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
                         </span>
                       )}
-                      {note.edited && <span className="text-stone-300">edited</span>}
-                      <span>{new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                      {note.edited && (
+                        <span className="text-stone-300">edited</span>
+                      )}
+                      <span>
+                        {new Date(note.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
                     </div>
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
                       {[
-                        { icon: <CheckCircle2 size={12} className={note.doneAt ? "text-emerald-500" : ""} />, fn: () => markDone(note), title: "Toggle done" },
-                        { icon: <Pin size={12} />,    fn: () => togglePin(note),   title: "Toggle pin" },
-                        { icon: <Pencil size={12} />, fn: () => { setEditingId(note.id); setEditText(note.text); }, title: "Edit" },
-                        { icon: <Trash2 size={12} />, fn: () => deleteNote(job.id, note.id), title: "Delete", danger: true },
+                        {
+                          icon: (
+                            <CheckCircle2
+                              size={12}
+                              className={note.doneAt ? "text-emerald-500" : ""}
+                            />
+                          ),
+                          fn: () => markDone(note),
+                          title: "Toggle done",
+                        },
+                        {
+                          icon: <Pin size={12} />,
+                          fn: () => togglePin(note),
+                          title: "Toggle pin",
+                        },
+                        {
+                          icon: <Pencil size={12} />,
+                          fn: () => {
+                            setEditingId(note.id);
+                            setEditText(note.text);
+                          },
+                          title: "Edit",
+                        },
+                        {
+                          icon: <Trash2 size={12} />,
+                          fn: () => deleteNote(job.id, note.id),
+                          title: "Delete",
+                          danger: true,
+                        },
                       ].map((btn, i) => (
-                        <button key={i} onClick={btn.fn} title={btn.title}
-                          className={`w-6 h-6 flex items-center justify-center rounded-md transition-all text-stone-300 ${btn.danger ? "hover:bg-rose-50 hover:text-rose-500" : "hover:bg-stone-100 hover:text-stone-600"}`}>
+                        <button
+                          key={i}
+                          onClick={btn.fn}
+                          title={btn.title}
+                          className={`w-6 h-6 flex items-center justify-center rounded-md transition-all text-stone-300 ${btn.danger ? "hover:bg-rose-50 hover:text-rose-500" : "hover:bg-stone-100 hover:text-stone-600"}`}
+                        >
                           {btn.icon}
                         </button>
                       ))}
@@ -237,47 +325,61 @@ function NotesTab({ job }) {
 
 function TimelineTab({ job }) {
   const [timeline, setTimeline] = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    jobApi.timeline(job.id)
+    jobApi
+      .timeline(job.id)
       .then((res) => setTimeline(res.data.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [job.id]);
 
-  if (loading) return (
-    <p className="text-center text-stone-300 text-sm py-10 animate-pulse">Loading timeline…</p>
-  );
+  if (loading)
+    return (
+      <p className="text-center text-stone-300 text-sm py-10 animate-pulse">
+        Loading timeline…
+      </p>
+    );
 
-  if (!timeline.length) return (
-    <div className="text-center py-10 text-stone-300">
-      <History size={24} className="mx-auto mb-2 opacity-40" />
-      <p className="text-sm">No history yet</p>
-    </div>
-  );
+  if (!timeline.length)
+    return (
+      <div className="text-center py-10 text-stone-300">
+        <History size={24} className="mx-auto mb-2 opacity-40" />
+        <p className="text-sm">No history yet</p>
+      </div>
+    );
 
   return (
     <div className="p-5 space-y-0">
       {timeline.map((event, i) => {
         const statusKey = event.label?.split(" ").pop()?.toLowerCase();
-        const dotClass  = TIMELINE_DOT[event.type === "created" ? "created" : statusKey] || "bg-stone-400";
+        const dotClass =
+          TIMELINE_DOT[event.type === "created" ? "created" : statusKey] ||
+          "bg-stone-400";
         return (
           <div key={i} className="flex gap-4">
             <div className="flex flex-col items-center">
-              <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1 ${dotClass}`} />
+              <div
+                className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1 ${dotClass}`}
+              />
               {i < timeline.length - 1 && (
                 <div className="w-px flex-1 bg-[#EFEDE9] my-1 min-h-[20px]" />
               )}
             </div>
             <div className="pb-5">
-              <p className="text-sm font-medium text-stone-700">{event.label}</p>
+              <p className="text-sm font-medium text-stone-700">
+                {event.label}
+              </p>
               <p className="text-[0.65rem] text-stone-400 mt-0.5 flex items-center gap-1">
                 <Clock size={9} />
                 {new Date(event.date).toLocaleDateString("en-US", {
-                  month: "short", day: "numeric", year: "numeric",
-                  hour: "2-digit", minute: "2-digit",
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </p>
             </div>
@@ -300,14 +402,19 @@ function StatusDropdown({ job, onStatusChange, busy }) {
         disabled={busy}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[0.62rem] font-bold uppercase tracking-wider transition-all ${PILL_STYLES[job.status]} ${busy ? "opacity-60" : "hover:opacity-75"}`}
       >
-        {busy && <span className="w-2.5 h-2.5 rounded-full border border-current/30 border-t-current animate-spin" />}
+        {busy && (
+          <span className="w-2.5 h-2.5 rounded-full border border-current/30 border-t-current animate-spin" />
+        )}
         {job.status}
         <ChevronDown size={9} />
       </button>
       <AnimatePresence>
         {open && (
           <>
-            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setOpen(false)}
+            />
             <motion.div
               initial={{ opacity: 0, y: -4, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -318,12 +425,19 @@ function StatusDropdown({ job, onStatusChange, busy }) {
               {STATUSES.map((s) => (
                 <button
                   key={s}
-                  onClick={() => { setOpen(false); onStatusChange(s); }}
+                  onClick={() => {
+                    setOpen(false);
+                    onStatusChange(s);
+                  }}
                   className={`w-full text-left px-3.5 py-2.5 text-xs font-medium capitalize flex items-center gap-2 transition-colors hover:bg-stone-50 ${
-                    s === job.status ? "text-stone-900 bg-stone-50 font-semibold" : "text-stone-500"
+                    s === job.status
+                      ? "text-stone-900 bg-stone-50 font-semibold"
+                      : "text-stone-500"
                   }`}
                 >
-                  {s === job.status && <Check size={10} className="text-stone-400" />}
+                  {s === job.status && (
+                    <Check size={10} className="text-stone-400" />
+                  )}
                   {s !== job.status && <span className="w-[10px]" />}
                   {s}
                 </button>
@@ -341,11 +455,11 @@ function StatusDropdown({ job, onStatusChange, busy }) {
 export default function JobDetailPanel({ job, onClose, onEdit }) {
   const { statusUpdate, toggleStarred, toggleArchived, jobs } = useJobStore();
   const { byJobId } = useJobNotesStore();
-  const [tab,            setTab]            = useState("notes");
+  const [tab, setTab] = useState("notes");
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Always reflect live store data
-  const liveJob   = jobs.find((j) => j.id === job?.id) || job;
+  const liveJob = jobs.find((j) => j.id === job?.id) || job;
   const noteCount = byJobId[liveJob?.id]?.items?.length || 0;
 
   if (!liveJob) return null;
@@ -363,7 +477,7 @@ export default function JobDetailPanel({ job, onClose, onEdit }) {
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ type: "spring", stiffness: 310, damping: 32 }}
-     className="fixed right-0 top-[60px] h-[calc(100vh-60px)] w-full max-w-[400px] bg-white border-l border-[#E8E4DE] shadow-2xl z-40 flex flex-col"
+      className="fixed right-0 top-[60px] h-[calc(100vh-60px)] w-full max-w-[500px] bg-white border-l border-[#E8E4DE] shadow-2xl z-40 flex flex-col"
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
       {/* Header */}
@@ -371,11 +485,12 @@ export default function JobDetailPanel({ job, onClose, onEdit }) {
         {/* Title row */}
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1 min-w-0 pr-3">
-            <h2 className="font-semibold font-['Lora'] text-stone-900 text-[1.05rem] leading-tight truncate">
+            <h2 className="font-semibold font-['Lora'] text-stone-900 text-xl leading-tight truncate">
               {liveJob.title}
             </h2>
             <p className="text-xs text-stone-500 mt-0.5">
-              {liveJob.company}{liveJob.location ? ` · ${liveJob.location}` : ""}
+              {liveJob.company}
+              {liveJob.location ? ` · ${liveJob.location}` : ""}
             </p>
           </div>
           <button
@@ -388,16 +503,25 @@ export default function JobDetailPanel({ job, onClose, onEdit }) {
 
         {/* Status + Priority + Tags */}
         <div className="flex items-center gap-2 flex-wrap mb-3">
-          <StatusDropdown job={liveJob} onStatusChange={handleStatusChange} busy={updatingStatus} />
+          <StatusDropdown
+            job={liveJob}
+            onStatusChange={handleStatusChange}
+            busy={updatingStatus}
+          />
 
           {liveJob.priority && (
-            <span className={`text-[0.6rem] font-bold uppercase tracking-wider ${PRIORITY_STYLES[liveJob.priority]}`}>
+            <span
+              className={`text-[0.75rem] font-bold uppercase tracking-wider ${PRIORITY_STYLES[liveJob.priority]}`}
+            >
               ▌ {liveJob.priority}
             </span>
           )}
 
           {liveJob.tags?.slice(0, 3).map((tag) => (
-            <span key={tag} className="px-2 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-500 text-[0.6rem]">
+            <span
+              key={tag}
+              className="px-2 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-500 text-[0.75rem]"
+            >
               {tag}
             </span>
           ))}
@@ -408,7 +532,12 @@ export default function JobDetailPanel({ job, onClose, onEdit }) {
           {[
             {
               label: liveJob.starred ? "Starred" : "Star",
-              icon: <Star size={11} fill={liveJob.starred ? "currentColor" : "none"} />,
+              icon: (
+                <Star
+                  size={11}
+                  fill={liveJob.starred ? "currentColor" : "none"}
+                />
+              ),
               onClick: () => toggleStarred(liveJob.id),
               active: liveJob.starred,
               activeClass: "bg-amber-50 border-amber-200 text-amber-600",
@@ -425,7 +554,9 @@ export default function JobDetailPanel({ job, onClose, onEdit }) {
               key={label}
               onClick={onClick}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[0.65rem] font-medium transition-all ${
-                active ? activeClass : "text-stone-400 border-[#E8E4DE] hover:border-stone-300 hover:text-stone-600"
+                active
+                  ? activeClass
+                  : "text-stone-400 border-[#E8E4DE] hover:border-stone-300 hover:text-stone-600"
               }`}
             >
               {icon} {label}
@@ -454,14 +585,30 @@ export default function JobDetailPanel({ job, onClose, onEdit }) {
 
       {/* Tabs */}
       <div className="flex border-b border-[#EFEDE9] px-2">
-        <TabBtn active={tab === "notes"} onClick={() => setTab("notes")} count={noteCount}>Notes</TabBtn>
-        <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} count={0}>Timeline</TabBtn>
+        <TabBtn
+          active={tab === "notes"}
+          onClick={() => setTab("notes")}
+          count={noteCount}
+        >
+          Notes
+        </TabBtn>
+        <TabBtn
+          active={tab === "timeline"}
+          onClick={() => setTab("timeline")}
+          count={0}
+        >
+          Timeline
+        </TabBtn>
       </div>
 
       {/* Tab content */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        {tab === "notes"    && <NotesTab job={liveJob} />}
-        {tab === "timeline" && <div className="overflow-y-auto flex-1"><TimelineTab job={liveJob} /></div>}
+        {tab === "notes" && <NotesTab job={liveJob} />}
+        {tab === "timeline" && (
+          <div className="overflow-y-auto flex-1">
+            <TimelineTab job={liveJob} />
+          </div>
+        )}
       </div>
     </motion.div>
   );

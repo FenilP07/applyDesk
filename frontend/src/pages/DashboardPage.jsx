@@ -61,7 +61,7 @@ function Card({
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[#A8A29E] mb-5">
+    <p className="text-[0.75rem] font-bold uppercase tracking-widest text-[#A8A29E] mb-5">
       {children}
     </p>
   );
@@ -112,7 +112,7 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <motion.div className="mb-8" variants={fadeUp(0)}>
-          <p className="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-[#A8A29E] mb-1">
+          <p className="text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-[#A8A29E] mb-1">
             {today}
           </p>
           <h1 className="text-3xl text-stone-900 font-semibold tracking-tight font-['Lora']">
@@ -213,7 +213,7 @@ export default function DashboardPage() {
                   {recentJobs.map((job) => (
                     <div
                       key={job.id}
-                      className="py-3.5 flex justify-between items-center gap-4"
+                      className="py-5 flex justify-between items-center gap-4"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-stone-900 truncate flex items-center gap-1.5">
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full border text-[0.6rem] font-bold uppercase tracking-wider ${PILL_STYLES[job.status]}`}
+                          className={`px-2.5 py-0.5 rounded-full border text-[0.75rem] font-bold uppercase tracking-wider ${PILL_STYLES[job.status]}`}
                         >
                           {job.status}
                         </span>
@@ -271,7 +271,7 @@ export default function DashboardPage() {
               },
             ].map(({ label, value, sub, color }) => (
               <Card key={label} className="p-6">
-                <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[#A8A29E] mb-2">
+                <p className="text-[0.75rem] font-bold uppercase tracking-widest text-[#A8A29E] mb-2">
                   {label}
                 </p>
                 <div className="text-4xl font-semibold font-['Lora'] tracking-tighter">
@@ -303,7 +303,7 @@ export default function DashboardPage() {
                     fill="currentColor"
                     className="text-amber-400"
                   />
-                  <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[#A8A29E]">
+                  <p className="text-[0.75rem] font-bold uppercase tracking-widest text-[#A8A29E]">
                     Starred
                   </p>
                 </div>

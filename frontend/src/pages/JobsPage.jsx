@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import useJobStore from "../store/jobStore";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,73 +43,6 @@ const PRIORITY_DOT = {
 const STATUSES = ["applied", "interview", "offer", "rejected"];
 const MAX_TAGS_IN_TABLE = 3;
 
-function StatusDrop({ job }) {
-  const { statusUpdate } = useJobStore();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const handle = async (s) => {
-    setOpen(false);
-    if (s === job.status) return;
-    setBusy(true);
-    await statusUpdate(job.id, s);
-    setBusy(false);
-  };
-
-  return (
-    <div className="relative" onClick={(e) => e.stopPropagation()}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        disabled={busy}
-        className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[0.6rem] font-bold uppercase tracking-wider transition-all ${PILL_STYLES[job.status]} hover:opacity-75`}
-      >
-        {busy && (
-          <span className="w-2.5 h-2.5 rounded-full border border-current/30 border-t-current animate-spin" />
-        )}
-        {job.status}
-        <ChevronDown size={9} />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, y: -4, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.1 }}
-              className="absolute top-full left-0 mt-1.5 bg-white border border-[#E8E4DE] rounded-xl shadow-lg z-20 overflow-hidden min-w-[140px]"
-            >
-              {STATUSES.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handle(s)}
-                  className={`w-full text-left px-3.5 py-2.5 text-xs font-medium capitalize flex items-center gap-2 transition-colors hover:bg-stone-50 ${
-                    s === job.status
-                      ? "bg-stone-50 text-stone-900 font-semibold"
-                      : "text-stone-500"
-                  }`}
-                >
-                  {s === job.status ? (
-                    <Check size={10} className="text-stone-400" />
-                  ) : (
-                    <span className="w-[10px]" />
-                  )}
-                  {s}
-                </button>
-              ))}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 function useWindowWidth() {
   const [w, setW] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1024,
@@ -136,13 +70,13 @@ function TagPills({ tags = [] }) {
         <span
           key={t}
           title={t}
-          className="px-2 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-600 text-[0.6rem] font-semibold whitespace-nowrap"
+          className="px-2 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-600 text-[0.72rem] font-semibold whitespace-nowrap"
         >
           {t}
         </span>
       ))}
       {extra > 0 && (
-        <span className="px-2 py-0.5 rounded-full bg-transparent border border-stone-200 text-stone-400 text-[0.6rem] font-semibold whitespace-nowrap">
+        <span className="px-2 py-0.5 rounded-full bg-transparent border border-stone-200 text-stone-400 text-[0.72rem] font-semibold whitespace-nowrap">
           +{extra}
         </span>
       )}
@@ -169,6 +103,115 @@ function formatAppliedDate(date) {
   });
 }
 
+function StatusDrop({ job }) {
+  const { statusUpdate } = useJobStore();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 160 });
+  const btnRef = useRef(null);
+
+  const updateMenuPos = () => {
+    if (!btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    setMenuPos({
+      top: rect.bottom + 8,
+      left: rect.left,
+      width: Math.max(rect.width, 160),
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateMenuPos();
+
+    const onScroll = () => updateMenuPos();
+    const onResize = () => updateMenuPos();
+
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open]);
+
+  const handle = async (s) => {
+    setOpen(false);
+    if (s === job.status) return;
+    setBusy(true);
+    await statusUpdate(job.id, s);
+    setBusy(false);
+  };
+
+  return (
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        ref={btnRef}
+        onClick={() => setOpen((o) => !o)}
+        disabled={busy}
+        className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[0.72rem] font-bold uppercase tracking-wider transition-all ${PILL_STYLES[job.status]} hover:opacity-80`}
+      >
+        {busy && (
+          <span className="w-2.5 h-2.5 rounded-full border border-current/30 border-t-current animate-spin" />
+        )}
+        {job.status}
+        <ChevronDown size={10} />
+      </button>
+
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {open && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[140]"
+                  onClick={() => setOpen(false)}
+                />
+
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                  transition={{ duration: 0.12 }}
+                  className="fixed bg-white border border-[#E8E4DE] rounded-xl shadow-xl z-[150] overflow-hidden"
+                  style={{
+                    top: menuPos.top,
+                    left: menuPos.left,
+                    minWidth: menuPos.width,
+                  }}
+                >
+                  {STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handle(s)}
+                      className={`w-full text-left px-3.5 py-2.5 text-[0.72rem] font-medium capitalize flex items-center gap-2 transition-colors hover:bg-stone-50 ${
+                        s === job.status
+                          ? "bg-stone-50 text-stone-900 font-semibold"
+                          : "text-stone-500"
+                      }`}
+                    >
+                      {s === job.status ? (
+                        <Check size={10} className="text-stone-400" />
+                      ) : (
+                        <span className="w-[10px]" />
+                      )}
+                      {s}
+                    </button>
+                  ))}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
 export default function JobsPage() {
   const {
     jobs,
@@ -177,7 +220,6 @@ export default function JobsPage() {
     setFilter,
     fetchJobs,
     deleteJob,
-    toggleStarred,
     resetFilters,
     page,
     limit,
@@ -270,6 +312,9 @@ export default function JobsPage() {
     filters.starred,
     filters.archived,
   ].filter(Boolean).length;
+
+  const ACTION_BTN =
+    "w-7 h-7 flex items-center justify-center rounded-lg text-stone-300 hover:text-stone-800 hover:bg-stone-100 transition-all";
 
   return (
     <div
@@ -377,7 +422,7 @@ export default function JobsPage() {
               >
                 <div className="bg-white border border-[#E8E4DE] rounded-2xl p-4 mb-4 flex flex-wrap gap-5 items-end">
                   <div>
-                    <label className="block text-[0.6rem] font-bold uppercase tracking-widest text-[#A8A29E] mb-1.5">
+                    <label className="block text-[0.72rem] font-bold uppercase tracking-widest text-[#A8A29E] mb-1.5">
                       Priority
                     </label>
                     <select
@@ -394,17 +439,6 @@ export default function JobsPage() {
 
                   <div className="flex items-center gap-4">
                     {[
-                      {
-                        key: "starred",
-                        label: "Starred only",
-                        icon: (
-                          <Star
-                            size={11}
-                            className="text-amber-400"
-                            fill={filters.starred ? "currentColor" : "none"}
-                          />
-                        ),
-                      },
                       {
                         key: "archived",
                         label: "Show archived",
@@ -450,11 +484,10 @@ export default function JobsPage() {
           </AnimatePresence>
 
           {/* Table */}
-          <div className="bg-white rounded-2xl border border-[#E8E4DE] shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#E8E4DE] shadow-sm">
             <div className="overflow-x-auto">
               <div className="min-w-[900px]">
-                {/* Column headers */}
-                <div className="grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-3.5 bg-[#FBF9F7] border-b border-[#E8E4DE]">
+                <div className="grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-5 bg-[#FBF9F7] border-b border-[#E8E4DE]">
                   {[
                     "Opportunity",
                     "Location",
@@ -472,7 +505,6 @@ export default function JobsPage() {
                   ))}
                 </div>
 
-                {/* Rows */}
                 <div className="divide-y divide-[#F5F3F0]">
                   <AnimatePresence mode="popLayout">
                     {loading && !jobs.length ? (
@@ -497,9 +529,6 @@ export default function JobsPage() {
                         const noteCount = byJobId?.[job.id]?.items?.length || 0;
                         const hasNotes = noteCount > 0;
 
-                        const ICON_BTN =
-                          "w-7 h-7 flex items-center justify-center rounded-lg text-stone-300 hover:text-stone-800 hover:bg-stone-100 transition-all";
-
                         return (
                           <motion.div
                             key={job.id}
@@ -512,7 +541,7 @@ export default function JobsPage() {
                                 p?.id === job.id ? null : job,
                               )
                             }
-                            className={`grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-3.5 items-center cursor-pointer transition-colors group ${
+                            className={`grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-5 items-center cursor-pointer transition-colors group ${
                               isSelected
                                 ? "bg-stone-50 border-l-2 border-l-stone-800 -ml-px"
                                 : "hover:bg-[#FAFAF9] border-l-2 border-l-transparent"
@@ -520,23 +549,6 @@ export default function JobsPage() {
                           >
                             {/* Opportunity */}
                             <div className="flex items-center gap-2.5 min-w-0 pr-3">
-                              {/* <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleStarred(job.id);
-                                }}
-                                className={`flex-shrink-0 transition-colors ${
-                                  job.starred
-                                    ? "text-amber-400"
-                                    : "text-stone-200 hover:text-amber-300"
-                                }`}
-                              >
-                                <Star
-                                  size={13}
-                                  fill={job.starred ? "currentColor" : "none"}
-                                />
-                              </button> */}
-
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-stone-900 truncate">
                                   {job.title}
@@ -594,7 +606,7 @@ export default function JobsPage() {
                               <button
                                 onClick={() => setDetailJob(job)}
                                 title={hasNotes ? "View notes" : "Add note"}
-                                className={ICON_BTN}
+                                className={ACTION_BTN}
                               >
                                 {hasNotes ? (
                                   <MessageSquare size={14} />
@@ -605,10 +617,9 @@ export default function JobsPage() {
 
                               <button
                                 onClick={(e) => {
-                                  e.stopPropagation(); 
+                                  e.stopPropagation();
 
                                   if (job.link) {
-                                   
                                     const url = job.link.startsWith("http")
                                       ? job.link
                                       : `https://${job.link}`;
@@ -618,7 +629,6 @@ export default function JobsPage() {
                                       "noopener,noreferrer",
                                     );
                                   } else {
-                                    
                                     setLinkJob(job);
                                   }
                                 }}
@@ -627,7 +637,7 @@ export default function JobsPage() {
                                     ? "Open Application Link"
                                     : "Add Link"
                                 }
-                                className={ICON_BTN}
+                                className={ACTION_BTN}
                               >
                                 {job.link ? (
                                   <SquareArrowOutUpRight size={14} />
@@ -639,7 +649,7 @@ export default function JobsPage() {
                               <button
                                 onClick={() => openEdit(job)}
                                 title="Edit"
-                                className={ICON_BTN}
+                                className={ACTION_BTN}
                               >
                                 <Pencil size={14} />
                               </button>
@@ -647,7 +657,7 @@ export default function JobsPage() {
                               <button
                                 onClick={() => setConfirmDelete(job.id)}
                                 title="Delete"
-                                className={`${ICON_BTN} hover:bg-rose-50 hover:text-rose-500`}
+                                className={`${ACTION_BTN} hover:bg-rose-50 hover:text-rose-500`}
                               >
                                 <Trash2 size={14} />
                               </button>
