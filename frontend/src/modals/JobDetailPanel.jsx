@@ -371,7 +371,7 @@ function TimelineTab({ job }) {
 }
 
 function DocumentsTab({ job }) {
-  const { uploadDocuments } = useJobStore();
+  const { uploadDocuments, deleteDocuments } = useJobStore();
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [files, setFiles] = useState({ resume: null, coverLetter: null });
   const [uploading, setUploading] = useState(false);
@@ -393,7 +393,6 @@ function DocumentsTab({ job }) {
     setUploading(false);
   };
 
-  // If a document is selected, show the Previewer
   if (selectedDoc) {
     return (
       <div className="flex flex-col h-full bg-[#F7F5F2]">
@@ -500,14 +499,32 @@ function DocumentsTab({ job }) {
                 <p className="text-[10px] text-stone-400">{doc.fileName}</p>
               </div>
             </div>
-            <button
-              onClick={() =>
-                setSelectedDoc({ url: doc.fileUrl, fileName: doc.fileName })
-              }
-              className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase text-stone-500 hover:bg-stone-50 hover:text-stone-900 border border-transparent hover:border-stone-200 transition-all"
-            >
-              Preview
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() =>
+                  setSelectedDoc({ url: doc.fileUrl, fileName: doc.fileName })
+                }
+                className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase text-stone-500 hover:bg-stone-50 hover:text-stone-900 transition-all"
+              >
+                Preview
+              </button>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (
+                    window.confirm(
+                      "Are you sure you want to remove this document?",
+                    )
+                  ) {
+                    await deleteDocuments(job.id, doc._id);
+                  }
+                }}
+                className="p-1.5 text-stone-300 hover:text-rose-600 transition-colors"
+                title="Delete Document"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
         ))}
       </div>

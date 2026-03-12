@@ -270,11 +270,29 @@ const useJobStore = create((set, get) => ({
       return { success: false, error: message };
     }
   },
+  deleteDocuments: async (jobId, docId) => {
+    set({ error: null });
+    try {
+      const res = await jobApi.deleteDocument(jobId, docId);
+      const updatedDocs = res.data.data;
+
+      set((state) => ({
+        jobs: state.jobs.map((job) =>
+          job.id === jobId ? { ...job, documents: updatedDocs } : job,
+        ),
+      }));
+      return { success: true };
+    } catch (error) {
+      const message = normErr(error);
+      set({ error: message });
+      return { success: false, error: message };
+    }
+  },
 
   fetchTimeLine: async (jobId) => {
     if (get().timelines[jobId]) return;
     const res = await jobApi.timeline(jobId);
-    set((state) => ({ 
+    set((state) => ({
       timelines: { ...state.timelines, [jobId]: res.data.data },
     }));
   },

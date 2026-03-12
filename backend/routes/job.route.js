@@ -10,6 +10,7 @@ import {
   getJobById,
   getJobTimeline,
   uploadJobDocuments,
+  deleteJobDocuments
 } from "../controllers/job.contorller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
@@ -35,7 +36,7 @@ router.post(
   ]),
   uploadJobDocuments,
 );
-
+router.delete("/:id/documents/:docId", isLoggedIn, deleteJobDocuments);
 router.delete("/:id", isLoggedIn, deleteJob);
 
 export default router;

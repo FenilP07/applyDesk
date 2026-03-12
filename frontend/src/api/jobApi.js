@@ -24,4 +24,6 @@ export const jobApi = {
       },
     });
   },
+  deleteDocument: (jobId, docId) =>
+    apiClient.delete(`/api/jobs/${jobId}/documents/${docId}`),
 };
