@@ -56,6 +56,18 @@ const jobSchema = new Schema(
     },
 
     tags: { type: [String], default: [], index: true },
+    documents: [
+      {
+        type: {
+          type: String,
+          enum: ["resume", "cover_letter"],
+          fileUrl: { type: String, required: true },
+          fileName: { type: String },
+          uploadedAt: { type: Date, default: Date.now },
+        },
+        fileUr,
+      },
+    ],
   },
   { timestamps: true },
 );
