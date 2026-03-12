@@ -1,4 +1,5 @@
 import Job from "../models/job.model.js";
+import { uploadBuffer } from "../utils/uploadToCloudinary.js";
 
 const VALID_STATUSES = new Set(["applied", "interview", "rejected", "offer"]);
 const VALID_PRIORITIES = new Set(["low", "medium", "high"]);
@@ -355,6 +356,53 @@ const getJobTimeline = async (req, res) => {
   }
 };
 
+const uploadJobDocuments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const job = await Job.findOne({ _id: id, userId: req.user._id });
+
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
+    const uploadedDocs = [];
+
+    const fileKeys = ["resume", "coverLetter"];
+
+    for (const key of fileKeys) {
+      if (req.files[key]) {
+        const file = req.files[key][0];
+
+        const result = await uploadBuffer(
+          file.buffer,
+          `applydesk/${req.user._id}`,
+        );
+
+        uploadedDocs.push({
+          type: key === "resume" ? "resume" : "cover_letter",
+          fileUrl: result.secure_url,
+          fileName: file.originalname,
+          publicId: result.public_id,
+        });
+      }
+    }
+
+    if (uploadedDocs.length === 0) {
+      return res.status(400).json({ message: "No files were uploaded." });
+    }
+
+    job.documents.push(...uploadedDocs);
+    await job.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Documents linked successfully",
+      data: job.documents,
+    });
+  } catch (error) {
+    console.error("Upload error:", error);
+    return res.status(500).json({ message: "Failed to upload documents" });
+  }
+};
+
 export {
   createJob,
   deleteJob,
@@ -364,4 +412,5 @@ export {
   updateJobStatus,
   getJobById,
   getJobTimeline,
+  uploadJobDocuments,
 };

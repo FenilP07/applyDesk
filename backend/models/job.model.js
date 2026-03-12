@@ -65,7 +65,6 @@ const jobSchema = new Schema(
           fileName: { type: String },
           uploadedAt: { type: Date, default: Date.now },
         },
-        fileUr,
       },
     ],
   },

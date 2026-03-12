@@ -9,7 +9,9 @@ import {
   updateJobStatus,
   getJobById,
   getJobTimeline,
+  uploadJobDocuments,
 } from "../controllers/job.contorller.js";
+import { upload } from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
@@ -22,6 +24,16 @@ router.get("/:id", isLoggedIn, getJobById);
 router.get("/:id/timeline", isLoggedIn, getJobTimeline);
 router.patch("/:id/status", isLoggedIn, updateJobStatus);
 router.patch("/:id", isLoggedIn, updateJob);
+
+router.post(
+  "/:id/documents",
+  isLoggedIn,
+  upload.fields([
+    { name: "resume", maxCount: 1 },
+    { name: "coverLetter", maxCount: 1 },
+  ]),
+  uploadJobDocuments,
+);
 
 router.delete("/:id", isLoggedIn, deleteJob);
 
