@@ -37,6 +37,8 @@ const useJobStore = create((set, get) => ({
   total: 0,
   hasMore: false,
 
+  timelines: {},
+
   filters: {
     status: "all",
     q: "",
@@ -152,6 +154,7 @@ const useJobStore = create((set, get) => ({
       starred: Boolean(payload.starred),
       archived: Boolean(payload.archived),
       tags: payload.tags || [],
+      document: [],
     });
 
     set((s) => ({ jobs: [optimisticJob, ...s.jobs] }));
@@ -247,6 +250,33 @@ const useJobStore = create((set, get) => ({
     }
 
     return res;
+  },
+  uploadDocuments: async (id, files) => {
+    set({ error: null });
+
+    try {
+      const res = await jobApi.uploadDocuments(id, files);
+      const documents = res.data.data || "";
+
+      set((s) => ({
+        jobs: s.jobs.map((job) =>
+          job.id === id ? { ...job, documents } : job,
+        ),
+      }));
+      return { success: true, data: documents };
+    } catch (error) {
+      const message = normErr(error);
+      set({ error: message });
+      return { success: false, error: message };
+    }
+  },
+
+  fetchTimeLine: async (jobId) => {
+    if (get().timelines[jobId]) return;
+    const res = await jobApi.timeline(jobId);
+    set((state) => ({ 
+      timelines: { ...state.timelines, [jobId]: res.data.data },
+    }));
   },
 }));
 

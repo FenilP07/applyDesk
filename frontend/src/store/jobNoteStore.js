@@ -24,6 +24,7 @@ export const useJobNotesStore = create((set, get) => ({
           error: null,
           page: 1,
           hasMore: true,
+          loaded: false,
         },
       },
     }));
@@ -54,6 +55,7 @@ export const useJobNotesStore = create((set, get) => ({
               loading: false,
               page,
               hasMore: Boolean(res.data.hasMore),
+              loaded: true,
             },
           },
         };
@@ -212,5 +214,16 @@ export const useJobNotesStore = create((set, get) => ({
       }));
       return { success: false, error: normErr(err) };
     }
+  },
+  
+  loadNotesIfNeeded: async (jobId, opts = { page: 1, limit: 50 }) => {
+    get().ensureBucket(jobId);
+
+    const bucket = get().byJobId[jobId];
+    if (bucket?.loaded || bucket?.loading) {
+      return { success: true, skipped: true };
+    }
+
+    return get().fetchNotes(jobId, opts);
   },
 }));

@@ -153,14 +153,14 @@ function StatusDrop({ job }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[140]"
+                  className="fixed inset-0 z-140"
                   onClick={() => setOpen(false)}
                 />
                 <motion.div
                   initial={{ opacity: 0, y: -4, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -4, scale: 0.97 }}
-                  className="fixed bg-white border border-[#E8E4DE] rounded-xl shadow-xl z-[150] overflow-hidden"
+                  className="fixed bg-white border border-[#E8E4DE] rounded-xl shadow-xl z-150 overflow-hidden"
                   style={{
                     top: menuPos.top,
                     left: menuPos.left,
@@ -176,7 +176,7 @@ function StatusDrop({ job }) {
                       {s === job.status ? (
                         <Check size={10} />
                       ) : (
-                        <span className="w-[10px]" />
+                        <span className="w-2.5" />
                       )}
                       {s}
                     </button>
@@ -412,7 +412,7 @@ export default function JobsPage() {
           <div className="bg-white md:rounded-2xl border border-[#E8E4DE] shadow-sm overflow-hidden">
             {/* DESKTOP TABLE VIEW */}
             <div className="hidden md:block overflow-x-auto">
-              <div className="min-w-[900px]">
+              <div className="min-w-225">
                 <div className="grid grid-cols-[1.8fr_1fr_100px_140px_100px_132px] px-5 py-4 bg-[#FBF9F7] border-b border-[#E8E4DE]">
                   {[
                     "Opportunity",
@@ -460,7 +460,7 @@ export default function JobsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-stone-400 truncate">
-                          <MapPin size={11} className="flex-shrink-0" />{" "}
+                          <MapPin size={11} className="shrink-0" />{" "}
                           {job.location || "—"}
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -675,7 +675,7 @@ export default function JobsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 z-[200]"
+            className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 z-200"
           >
             <motion.div
               initial={{ scale: 0.96 }}
