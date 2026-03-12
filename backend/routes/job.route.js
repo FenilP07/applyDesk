@@ -13,6 +13,7 @@ import {
 } from "../controllers/job.contorller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
+
 const router = express.Router();
 
 router.get("/analytics/summary", isLoggedIn, getJobSummary);

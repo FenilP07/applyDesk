@@ -1,5 +1,6 @@
 import Job from "../models/job.model.js";
 import { uploadBuffer } from "../utils/uploadToCloudinary.js";
+import { deleteResource } from "../utils/deleteFromCloudinary.js";
 
 const VALID_STATUSES = new Set(["applied", "interview", "rejected", "offer"]);
 const VALID_PRIORITIES = new Set(["low", "medium", "high"]);
@@ -403,6 +404,36 @@ const uploadJobDocuments = async (req, res) => {
   }
 };
 
+const deleteJobDocuments = async (req, res) => {
+  try {
+    const { id, docId } = req.params;
+    const job = await Job.findOne({ _id: id, userId: req.user._id });
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
+    const doc = job.documents.id(docId);
+    if (!doc) return res.status(404).json({ message: "Document not found" });
+
+    if (doc.publicId) {
+      try {
+        await deleteResource(doc.publicId, "raw");
+      } catch (cloudErr) {
+        console.error("Cloudinary cleanup failed:", cloudErr.message);
+      }
+    }
+    doc.deleteOne();
+    await job.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Document removed",
+      data: job.documents,
+    });
+  } catch (error) {
+    console.error("deleteJobDocument error:", error);
+    return res.status(500).json({ message: "Server error during deletion" });
+  }
+};
+
 export {
   createJob,
   deleteJob,
@@ -413,4 +444,5 @@ export {
   getJobById,
   getJobTimeline,
   uploadJobDocuments,
+  deleteJobDocuments,
 };
