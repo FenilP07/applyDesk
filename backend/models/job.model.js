@@ -61,9 +61,24 @@ const jobSchema = new Schema(
         type: {
           type: String,
           enum: ["resume", "cover_letter"],
-          fileUrl: { type: String, required: true },
-          fileName: { type: String },
-          uploadedAt: { type: Date, default: Date.now },
+          required: true,
+        },
+        fileUrl: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        fileName: {
+          type: String,
+          trim: true,
+        },
+        publicId: {
+          type: String,
+          trim: true,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
         },
       },
     ],

@@ -372,61 +372,24 @@ function TimelineTab({ job }) {
 
 function DocumentsTab({ job }) {
   const { uploadDocuments, deleteDocuments } = useJobStore();
-  const [selectedDoc, setSelectedDoc] = useState(null);
   const [files, setFiles] = useState({ resume: null, coverLetter: null });
   const [uploading, setUploading] = useState(false);
-  const [status, setStatus] = useState({ message: "", error: "" });
 
   const documents = Array.isArray(job.documents) ? job.documents : [];
 
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!files.resume && !files.coverLetter) return;
+
     setUploading(true);
     const result = await uploadDocuments(job.id, files);
+
     if (result.success) {
-      setStatus({ message: "Saved successfully", error: "" });
       setFiles({ resume: null, coverLetter: null });
-    } else {
-      setStatus({ error: result.error || "Upload failed", message: "" });
     }
+
     setUploading(false);
   };
-
-  if (selectedDoc) {
-    return (
-      <div className="flex flex-col h-full bg-[#F7F5F2]">
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[#EFEDE9]">
-          <button
-            onClick={() => setSelectedDoc(null)}
-            className="flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-widest text-stone-500 hover:text-stone-900 transition-all"
-          >
-            <X size={14} /> Close Preview
-          </button>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-medium text-stone-400 truncate max-w-[150px]">
-              {selectedDoc.fileName}
-            </span>
-            <a
-              href={selectedDoc.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-stone-400 hover:text-stone-900"
-            >
-              <ExternalLink size={14} />
-            </a>
-          </div>
-        </div>
-        <div className="flex-1 bg-stone-200">
-          <iframe
-            src={`${selectedDoc.url}#toolbar=0&navpanes=0`}
-            className="w-full h-full border-none"
-            title="PDF Preview"
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#FBFBFA]">
@@ -436,16 +399,20 @@ function DocumentsTab({ job }) {
             {["resume", "coverLetter"].map((type) => (
               <label
                 key={type}
-                className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${files[type] ? "border-stone-900 bg-stone-50" : "border-stone-200 hover:border-stone-400 bg-stone-50/50"}`}
+                className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer ${
+                  files[type]
+                    ? "border-stone-900 bg-stone-50"
+                    : "border-stone-200 hover:border-stone-400 bg-stone-50/50"
+                }`}
               >
                 <input
                   type="file"
                   className="hidden"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf"
                   onChange={(e) =>
                     setFiles((prev) => ({
                       ...prev,
-                      [type]: e.target.files?.[0],
+                      [type]: e.target.files?.[0] || null,
                     }))
                   }
                 />
@@ -469,7 +436,7 @@ function DocumentsTab({ job }) {
             <button
               type="submit"
               disabled={uploading}
-              className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all"
+              className="w-full py-2.5 bg-stone-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50"
             >
               {uploading ? "Uploading..." : "Save Documents"}
             </button>
@@ -481,46 +448,70 @@ function DocumentsTab({ job }) {
         <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-2">
           Vault
         </h4>
+
+        {documents.length === 0 && (
+          <div className="text-center py-8 border-2 border-dashed border-stone-100 rounded-xl">
+            <FolderOpen size={20} className="mx-auto text-stone-200 mb-2" />
+            <p className="text-[10px] text-stone-400 uppercase font-bold tracking-tight">
+              Vault is empty
+            </p>
+          </div>
+        )}
+
         {documents.map((doc, i) => (
           <div
-            key={i}
+            key={doc._id || doc.publicId || i}
             className="group flex items-center justify-between p-3 bg-white border border-[#EFEDE9] rounded-xl hover:border-stone-400 transition-all"
           >
             <div className="flex items-center gap-3">
               <div
-                className={`p-2 rounded-lg ${doc.type === "resume" ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"}`}
+                className={`p-2 rounded-lg ${
+                  doc.type === "resume"
+                    ? "bg-blue-50 text-blue-600"
+                    : "bg-purple-50 text-purple-600"
+                }`}
               >
                 <FileText size={16} />
               </div>
-              <div>
-                <p className="text-xs font-bold text-stone-800 capitalize">
+
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-stone-800 capitalize truncate">
                   {doc.type?.replace("_", " ")}
                 </p>
-                <p className="text-[10px] text-stone-400">{doc.fileName}</p>
+                <p className="text-[10px] text-stone-400 truncate max-w-[140px]">
+                  {doc.fileName || "Untitled document"}
+                </p>
               </div>
             </div>
+
             <div className="flex items-center gap-1">
-              <button
-                onClick={() =>
-                  setSelectedDoc({ url: doc.fileUrl, fileName: doc.fileName })
-                }
-                className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase text-stone-500 hover:bg-stone-50 hover:text-stone-900 transition-all"
+              <a
+                href={doc.fileUrl || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  if (!doc.fileUrl) {
+                    e.preventDefault();
+                    alert("Document URL is missing.");
+                  }
+                }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                  doc.fileUrl
+                    ? "text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+                    : "text-stone-300 cursor-not-allowed"
+                }`}
               >
-                Preview
-              </button>
+                View <ExternalLink size={10} />
+              </a>
+
               <button
                 onClick={async (e) => {
                   e.stopPropagation();
-                  if (
-                    window.confirm(
-                      "Are you sure you want to remove this document?",
-                    )
-                  ) {
+                  if (window.confirm("Remove this document?")) {
                     await deleteDocuments(job.id, doc._id);
                   }
                 }}
                 className="p-1.5 text-stone-300 hover:text-rose-600 transition-colors"
-                title="Delete Document"
               >
                 <Trash2 size={14} />
               </button>

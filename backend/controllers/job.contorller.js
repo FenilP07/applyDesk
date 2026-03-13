@@ -375,6 +375,10 @@ const uploadJobDocuments = async (req, res) => {
         const result = await uploadBuffer(
           file.buffer,
           `applydesk/${req.user._id}`,
+          {
+            resource_type: "image",
+            filename_override: file.originalname,
+          },
         );
 
         uploadedDocs.push({
@@ -415,7 +419,7 @@ const deleteJobDocuments = async (req, res) => {
 
     if (doc.publicId) {
       try {
-        await deleteResource(doc.publicId, "raw");
+        await deleteResource(doc.publicId, "image");
       } catch (cloudErr) {
         console.error("Cloudinary cleanup failed:", cloudErr.message);
       }
