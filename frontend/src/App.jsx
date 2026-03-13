@@ -24,6 +24,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import JobsPage from "./pages/JobsPage";
 import NotificationPage from "./pages/NotificationPage";
+import LandingPage from "./pages/LandingPage"
 
 // ─── HOOK: responsive window width ───────────────────────────────────────────
 
@@ -73,7 +74,7 @@ function TopNav() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (location.pathname === "/login") return null;
+  if (location.pathname === "/login" || location.pathname === "/") return null;
 
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -483,7 +484,7 @@ function TopNav() {
 // ─── MAIN APP ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const { bootstrap } = useAuthStore();
+  const { bootstrap, isAuthenticated } = useAuthStore(); // Added isAuthenticated here
   const windowWidth = useWindowWidth();
 
   useEffect(() => {
@@ -493,9 +494,25 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: "#F7F5F2" }}>
       <TopNav />
-      <main style={{ padding: windowWidth < 768 ? "1rem" : "0" }}>
+      {/* Added a max-width container for better desktop readability */}
+      <main
+        style={{
+          padding: windowWidth < 768 ? "1rem" : "2rem",
+          maxWidth: "1200px",
+          margin: "0 auto",
+        }}
+      >
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <LandingPage /> // Ensure this is imported!
+              )
+            }
+          />
           <Route
             path="/login"
             element={
