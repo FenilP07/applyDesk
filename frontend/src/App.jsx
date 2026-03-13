@@ -24,7 +24,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import JobsPage from "./pages/JobsPage";
 import NotificationPage from "./pages/NotificationPage";
-import LandingPage from "./pages/LandingPage"
+import LandingPage from "./pages/LandingPage";
 
 // ─── HOOK: responsive window width ───────────────────────────────────────────
 
@@ -54,6 +54,7 @@ function TopNav() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isAuthenticated) fetchAllNotifications();
